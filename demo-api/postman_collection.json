@@ -1,0 +1,215 @@
+{
+  "info": {
+    "_postman_id": "demo-api-collection",
+    "name": "Demo API with Metering",
+    "description": "Collection for testing the Demo API endpoints which are automatically metered.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get Users",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "secret",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:4000/api/users",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "4000",
+          "path": [
+            "api",
+            "users"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Create User",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "secret",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"name\": \"John Doe\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:4000/api/users",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "4000",
+          "path": [
+            "api",
+            "users"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Upload File (Simulated)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "secret",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "This is some dummy content to simulate a file upload and test bandwidth metering."
+        },
+        "url": {
+          "raw": "http://localhost:4000/api/upload",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "4000",
+          "path": [
+            "api",
+            "upload"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Download File (Simulated)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "secret",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:4000/api/download/123",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "4000",
+          "path": [
+            "api",
+            "download",
+            "123"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Stream Data",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "secret",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:4000/api/stream/video_1",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "4000",
+          "path": [
+            "api",
+            "stream",
+            "video_1"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Delete File",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "secret",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:4000/api/files/file_123",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "4000",
+          "path": [
+            "api",
+            "files",
+            "file_123"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Slow Request (Latency Test)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "secret",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:4000/api/slow",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "4000",
+          "path": [
+            "api",
+            "slow"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000",
+      "type": "string"
+    }
+  ]
+}

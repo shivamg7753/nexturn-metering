@@ -1,0 +1,274 @@
+[
+  {
+    "name": "API Request",
+    "description": "Track API requests made by customers",
+    "dimensions": {
+      "attributes": [
+        {
+          "name": "endpoint",
+          "unit": "string"
+        },
+        {
+          "name": "method",
+          "unit": "string"
+        },
+        {
+          "name": "response_time_ms",
+          "unit": "milliseconds"
+        },
+        {
+          "name": "status_code",
+          "unit": "number"
+        },
+        {
+          "name": "request_size_bytes",
+          "unit": "bytes"
+        },
+        {
+          "name": "response_size_bytes",
+          "unit": "bytes"
+        }
+      ],
+      "dimensions": [
+        "region",
+        "environment",
+        "api_version"
+      ]
+    }
+  },
+  {
+    "name": "Storage Usage",
+    "description": "Track storage consumption over time",
+    "dimensions": {
+      "attributes": [
+        {
+          "name": "storage_gb",
+          "unit": "gigabytes"
+        },
+        {
+          "name": "file_count",
+          "unit": "count"
+        },
+        {
+          "name": "bucket_name",
+          "unit": "string"
+        }
+      ],
+      "dimensions": [
+        "storage_class",
+        "region"
+      ]
+    }
+  },
+  {
+    "name": "Compute Usage",
+    "description": "Track compute/processing time",
+    "dimensions": {
+      "attributes": [
+        {
+          "name": "duration_seconds",
+          "unit": "seconds"
+        },
+        {
+          "name": "cpu_cores",
+          "unit": "count"
+        },
+        {
+          "name": "memory_gb",
+          "unit": "gigabytes"
+        },
+        {
+          "name": "instance_type",
+          "unit": "string"
+        }
+      ],
+      "dimensions": [
+        "region",
+        "availability_zone"
+      ]
+    }
+  },
+  {
+    "name": "Active User",
+    "description": "Track unique active users",
+    "dimensions": {
+      "attributes": [
+        {
+          "name": "user_id",
+          "unit": "string"
+        },
+        {
+          "name": "session_duration_minutes",
+          "unit": "minutes"
+        },
+        {
+          "name": "actions_count",
+          "unit": "count"
+        }
+      ],
+      "dimensions": [
+        "user_tier",
+        "platform",
+        "device_type"
+      ]
+    }
+  },
+  {
+    "name": "Data Transfer",
+    "description": "Track data bandwidth usage",
+    "dimensions": {
+      "attributes": [
+        {
+          "name": "bytes_transferred",
+          "unit": "bytes"
+        },
+        {
+          "name": "transfer_type",
+          "unit": "string"
+        },
+        {
+          "name": "protocol",
+          "unit": "string"
+        }
+      ],
+      "dimensions": [
+        "direction",
+        "region",
+        "cdn_enabled"
+      ]
+    }
+  },
+  {
+    "name": "Database Query",
+    "description": "Track database operations",
+    "dimensions": {
+      "attributes": [
+        {
+          "name": "query_duration_ms",
+          "unit": "milliseconds"
+        },
+        {
+          "name": "rows_affected",
+          "unit": "count"
+        },
+        {
+          "name": "query_type",
+          "unit": "string"
+        },
+        {
+          "name": "database_name",
+          "unit": "string"
+        }
+      ],
+      "dimensions": [
+        "database_engine",
+        "read_write"
+      ]
+    }
+  },
+  {
+    "name": "Email Sent",
+    "description": "Track email sending events",
+    "dimensions": {
+      "attributes": [
+        {
+          "name": "recipient_count",
+          "unit": "count"
+        },
+        {
+          "name": "email_size_kb",
+          "unit": "kilobytes"
+        },
+        {
+          "name": "template_id",
+          "unit": "string"
+        }
+      ],
+      "dimensions": [
+        "email_type",
+        "priority",
+        "has_attachments"
+      ]
+    }
+  },
+  {
+    "name": "SMS Sent",
+    "description": "Track SMS messaging",
+    "dimensions": {
+      "attributes": [
+        {
+          "name": "message_length",
+          "unit": "characters"
+        },
+        {
+          "name": "segment_count",
+          "unit": "count"
+        },
+        {
+          "name": "destination_country",
+          "unit": "string"
+        }
+      ],
+      "dimensions": [
+        "message_type",
+        "carrier"
+      ]
+    }
+  },
+  {
+    "name": "Video Processing",
+    "description": "Track video encoding/transcoding",
+    "dimensions": {
+      "attributes": [
+        {
+          "name": "duration_minutes",
+          "unit": "minutes"
+        },
+        {
+          "name": "input_size_mb",
+          "unit": "megabytes"
+        },
+        {
+          "name": "output_size_mb",
+          "unit": "megabytes"
+        },
+        {
+          "name": "resolution",
+          "unit": "string"
+        }
+      ],
+      "dimensions": [
+        "codec",
+        "quality_preset"
+      ]
+    }
+  },
+  {
+    "name": "AI Model Inference",
+    "description": "Track AI/ML model predictions",
+    "dimensions": {
+      "attributes": [
+        {
+          "name": "inference_time_ms",
+          "unit": "milliseconds"
+        },
+        {
+          "name": "model_name",
+          "unit": "string"
+        },
+        {
+          "name": "input_tokens",
+          "unit": "count"
+        },
+        {
+          "name": "output_tokens",
+          "unit": "count"
+        }
+      ],
+      "dimensions": [
+        "model_version",
+        "gpu_enabled"
+      ]
+    }
+  }
+]

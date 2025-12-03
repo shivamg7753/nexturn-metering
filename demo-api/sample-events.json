@@ -1,0 +1,119 @@
+[
+  {
+    "transactionId": "evt_001",
+    "eventSchemaId": "REPLACE_WITH_API_REQUEST_SCHEMA_ID",
+    "customerId": "cus_demo_001",
+    "timestamp": "2025-12-03T10:00:00Z",
+    "properties": {
+      "endpoint": "/api/v1/users",
+      "method": "GET",
+      "response_time_ms": 45,
+      "status_code": 200,
+      "request_size_bytes": 512,
+      "response_size_bytes": 2048,
+      "region": "us-east-1",
+      "environment": "production",
+      "api_version": "v1"
+    }
+  },
+  {
+    "transactionId": "evt_002",
+    "eventSchemaId": "REPLACE_WITH_API_REQUEST_SCHEMA_ID",
+    "customerId": "cus_demo_001",
+    "timestamp": "2025-12-03T10:05:00Z",
+    "properties": {
+      "endpoint": "/api/v1/orders",
+      "method": "POST",
+      "response_time_ms": 120,
+      "status_code": 201,
+      "request_size_bytes": 1024,
+      "response_size_bytes": 512,
+      "region": "us-east-1",
+      "environment": "production",
+      "api_version": "v1"
+    }
+  },
+  {
+    "transactionId": "evt_003",
+    "eventSchemaId": "REPLACE_WITH_STORAGE_SCHEMA_ID",
+    "customerId": "cus_demo_001",
+    "timestamp": "2025-12-03T10:10:00Z",
+    "properties": {
+      "storage_gb": 15.5,
+      "file_count": 1250,
+      "bucket_name": "customer-uploads",
+      "storage_class": "standard",
+      "region": "us-east-1"
+    }
+  },
+  {
+    "transactionId": "evt_004",
+    "eventSchemaId": "REPLACE_WITH_COMPUTE_SCHEMA_ID",
+    "customerId": "cus_demo_001",
+    "timestamp": "2025-12-03T10:15:00Z",
+    "properties": {
+      "duration_seconds": 3600,
+      "cpu_cores": 4,
+      "memory_gb": 16,
+      "instance_type": "c5.xlarge",
+      "region": "us-east-1",
+      "availability_zone": "us-east-1a"
+    }
+  },
+  {
+    "transactionId": "evt_005",
+    "eventSchemaId": "REPLACE_WITH_ACTIVE_USER_SCHEMA_ID",
+    "customerId": "cus_demo_001",
+    "timestamp": "2025-12-03T10:20:00Z",
+    "properties": {
+      "user_id": "user_12345",
+      "session_duration_minutes": 45,
+      "actions_count": 23,
+      "user_tier": "premium",
+      "platform": "web",
+      "device_type": "desktop"
+    }
+  },
+  {
+    "transactionId": "evt_006",
+    "eventSchemaId": "REPLACE_WITH_DATA_TRANSFER_SCHEMA_ID",
+    "customerId": "cus_demo_001",
+    "timestamp": "2025-12-03T10:25:00Z",
+    "properties": {
+      "bytes_transferred": 524288000,
+      "transfer_type": "download",
+      "protocol": "https",
+      "direction": "outbound",
+      "region": "us-east-1",
+      "cdn_enabled": "true"
+    }
+  },
+  {
+    "transactionId": "evt_007",
+    "eventSchemaId": "REPLACE_WITH_EMAIL_SCHEMA_ID",
+    "customerId": "cus_demo_001",
+    "timestamp": "2025-12-03T10:30:00Z",
+    "properties": {
+      "recipient_count": 1,
+      "email_size_kb": 25,
+      "template_id": "welcome_email",
+      "email_type": "transactional",
+      "priority": "normal",
+      "has_attachments": "false"
+    }
+  },
+  {
+    "transactionId": "evt_008",
+    "eventSchemaId": "REPLACE_WITH_AI_INFERENCE_SCHEMA_ID",
+    "customerId": "cus_demo_001",
+    "timestamp": "2025-12-03T10:35:00Z",
+    "properties": {
+      "inference_time_ms": 250,
+      "model_name": "gpt-4",
+      "input_tokens": 150,
+      "output_tokens": 300,
+      "model_version": "2024-11",
+      "gpu_enabled": "true"
+    }
+  }
+]
