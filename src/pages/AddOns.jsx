@@ -1,23 +1,23 @@
-﻿import React, { useState, useEffect } from 'react';
-import { Plus, Search, Tag, DollarSign, CreditCard } from 'lucide-react';
+import React, { useState } from 'react';
+import { Plus, Search, Edit2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useApp } from '../context/store';
 import { api } from '../api/client';
-
 
 export function AddOns() {
   const { state, dispatch } = useApp();
   const [isCreating, setIsCreating] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('name_asc');
 
   // Form State
   const [name, setName] = useState('');
   const [type, setType] = useState('fixed_fee');
   const [creditAmountCents, setCreditAmountCents] = useState(0);
 
-
-
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const loadingToast = toast.loading('Creating add-on...');
     try {
       const newAddOn = await api.createAddOn({
         name,
@@ -26,11 +26,12 @@ export function AddOns() {
       });
 
       dispatch({ type: 'ADD_ADDON', payload: newAddOn });
+      toast.success('Add-on created successfully!', { id: loadingToast });
       setIsCreating(false);
       resetForm();
     } catch (err) {
       console.error(err);
-      alert('Failed to create Add-On');
+      toast.error('Failed to create add-on', { id: loadingToast });
     }
   };
 
@@ -40,80 +41,125 @@ export function AddOns() {
     setCreditAmountCents(0);
   }
 
-  const filteredAddOns = state.addOns.filter(a =>
-    a.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const formatTimeAgo = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    const now = new Date();
+    const seconds = Math.floor((now - date) / 1000);
+
+    if (seconds < 60) return `${seconds} second${seconds !== 1 ? 's' : ''} ago`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+    const days = Math.floor(hours / 24);
+    return `${days} day${days !== 1 ? 's' : ''} ago`;
+  };
+
+  const filteredAddOns = state.addOns
+    .filter(a => a.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    .sort((a, b) => {
+      if (sortBy === 'name_asc') return a.name.localeCompare(b.name);
+      if (sortBy === 'name_desc') return b.name.localeCompare(a.name);
+      if (sortBy === 'created_desc') return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+      return 0;
+    });
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      {/* Search and Actions Bar */}
+      <div className="flex items-center justify-between gap-4">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <input
             type="text"
-            placeholder="Search add-ons..."
-            className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+            placeholder="Search"
+            className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <button
-          onClick={() => setIsCreating(true)}
-          className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-        >
-          <Plus className="h-5 w-5 mr-2" />
-          New Add-On
-        </button>
+
+        <div className="flex items-center gap-3">
+          <select
+            value={sortBy}
+            onChange={e => setSortBy(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white"
+          >
+            <option value="name_asc">Name Ascending</option>
+            <option value="name_desc">Name Descending</option>
+            <option value="created_desc">Recently Created</option>
+          </select>
+
+          <button
+            onClick={() => setIsCreating(true)}
+            className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+          >
+            <Plus className="h-5 w-5 mr-2" />
+            New Add-On
+          </button>
+        </div>
       </div>
 
+      {/* Add-Ons Table */}
       {filteredAddOns.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-          <Tag className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No add-ons found</h3>
-          <p className="mt-1 text-sm text-gray-500">Get started by creating a new add-on.</p>
+          <p className="text-gray-500">No add-ons found</p>
+          <p className="text-sm text-gray-400 mt-1">Create your first add-on to get started</p>
           <div className="mt-6">
             <button
               onClick={() => setIsCreating(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+              className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
             >
-              <Plus className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+              <Plus className="h-5 w-5 mr-2" />
               New Add-On
             </button>
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredAddOns.map((addOn) => (
-            <div key={addOn.id} className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900">{addOn.name}</h3>
-                </div>
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${addOn.type === 'fixed_fee' ? 'bg-green-100 text-green-800' :
-                  addOn.type === 'credit' ? 'bg-blue-100 text-blue-800' :
-                    'bg-purple-100 text-purple-800'
-                  }`}>
-                  {addOn.type === 'fixed_fee' ? 'Fixed Fee' : addOn.type === 'credit' ? 'Credit' : 'License'}
-                </span>
-              </div>
-
-              <div className="mt-4 pt-4 border-t border-gray-100">
-
-                {addOn.type === 'credit' && (
-                  <div className="flex items-center text-sm text-gray-600">
-                    <CreditCard className="h-4 w-4 mr-2 text-gray-400" />
-                    ${(addOn.creditAmountCents || 0) / 100} Credit
-                  </div>
-                )}
-                {addOn.type === 'license' && (
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Tag className="h-4 w-4 mr-2 text-gray-400" />
-                    License
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="text-left px-6 py-3 text-sm font-medium text-gray-600">Add-On Name</th>
+                <th className="text-left px-6 py-3 text-sm font-medium text-gray-600">Type</th>
+                <th className="text-left px-6 py-3 text-sm font-medium text-gray-600">Created At</th>
+                <th className="w-12"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filteredAddOns.map((addOn) => (
+                <tr key={addOn.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4">
+                    <div>
+                      <p className="font-semibold text-cyan-600 text-base">{addOn.name}</p>
+                      <p className="text-xs text-gray-500 mt-0.5 font-mono">{addOn.id}</p>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex items-center px-3 py-1 text-xs font-medium rounded ${addOn.type === 'license' || addOn.type === 'Licensed'
+                      ? 'bg-cyan-100 text-cyan-700 border border-cyan-200'
+                      : addOn.type === 'fixed_fee' || addOn.type === 'Fixed'
+                        ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                        : 'bg-blue-100 text-blue-700 border border-blue-200'
+                      }`}>
+                      {addOn.type === 'fixed_fee' ? 'Fixed' :
+                        addOn.type === 'license' ? 'Licensed' :
+                          addOn.type === 'credit' ? 'Credit' : addOn.type}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-sm text-gray-600">{formatTimeAgo(addOn.created_at)}</span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <button className="p-1.5 hover:bg-gray-100 rounded transition-colors">
+                      <Edit2 className="w-4 h-4 text-gray-600" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
@@ -146,10 +192,6 @@ export function AddOns() {
                   <option value="license">License</option>
                 </select>
               </div>
-
-
-
-
 
               {type === 'credit' && (
                 <div>
@@ -186,4 +228,3 @@ export function AddOns() {
     </div>
   );
 }
-

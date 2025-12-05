@@ -14,7 +14,6 @@ const navigation = [
     { name: 'Invoices', href: '/invoices', icon: FileText },
     { name: 'Credit Notes', href: '/credit-notes', icon: Receipt },
     { name: 'Events', href: '/events', icon: Zap },
-    { name: 'Event Schemas', href: '/schemas', icon: Code },
     { name: 'Billable Items', href: '/billable-items', icon: Gauge },
     { name: 'Coupons', href: '/coupons', icon: Tag },
     { name: 'Wallets', href: '/wallets', icon: Wallet },

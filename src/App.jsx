@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { AppProvider, useApp } from './context/store';
 import { generateSeedData } from './logic/generator';
 import { api } from './api/client';
@@ -17,6 +18,8 @@ import { Meters } from './pages/Meters';
 import { BillableItems } from './pages/BillableItems';
 import { PlanFormPage } from './pages/PlanFormPage';
 import { PlanDetailPage } from './pages/PlanDetailPage';
+import { Events } from './pages/Events';
+
 
 const DashboardLoader = () => {
     const { dispatch } = useApp();
@@ -123,7 +126,7 @@ const DashboardLoader = () => {
                     <Route path="billable-metrics" element={<BillableMetrics />} />
                     <Route path="invoices" element={<PlaceholderPage title="Invoices" />} />
                     <Route path="credit-notes" element={<PlaceholderPage title="Credit Notes" />} />
-                    <Route path="events" element={<PlaceholderPage title="Events" />} />
+                    <Route path="events" element={<Events />} />
                     <Route path="coupons" element={<PlaceholderPage title="Coupons" />} />
                     <Route path="wallets" element={<PlaceholderPage title="Wallets" />} />
                     <Route path="schemas" element={<Schemas />} />
@@ -140,6 +143,28 @@ const DashboardLoader = () => {
 function App() {
     return (
         <AppProvider>
+            <Toaster
+                position="top-right"
+                toastOptions={{
+                    duration: 3000,
+                    style: {
+                        background: '#fff',
+                        color: '#363636',
+                    },
+                    success: {
+                        iconTheme: {
+                            primary: '#10b981',
+                            secondary: '#fff',
+                        },
+                    },
+                    error: {
+                        iconTheme: {
+                            primary: '#ef4444',
+                            secondary: '#fff',
+                        },
+                    },
+                }}
+            />
             <DashboardLoader />
         </AppProvider>
     );
