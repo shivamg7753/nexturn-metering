@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import { db } from './db';
+import apiRoutes from './routes/index';
+import { errorHandler } from './middleware/errorHandler';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -8,9 +10,12 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// Mount modular API routes (meters, customers, usage)
+app.use('/api', apiRoutes);
 
-
-// --- Routes ---
+// --- Legacy Routes (To be modularized) ---
+// NOTE: Meters, Customers, and Usage endpoints are now in modular routes
+// The following endpoints demonstrate the legacy pattern and should be refactored similarly
 
 // Health Check
 app.get('/health', (req, res) => {
@@ -70,30 +75,9 @@ app.get('/api/schemas', async (req, res) => {
   res.json(schemas.map(s => ({ ...s, dimensions: JSON.parse(s.dimensions) })));
 });
 
-// 2. Meters
-app.post('/api/meters', async (req, res) => {
-  try {
-    const { name, description, eventSchemaId, aggregation, field, filter, window } = req.body;
-    const meter = db.meters.create({
-      name,
-      description,
-      eventSchemaId,
-      aggregation,
-      field,
-      filter: JSON.stringify(filter || {}),
-      window,
-    });
-    res.json(meter);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to create meter' });
-  }
-});
-
-app.get('/api/meters', async (req, res) => {
-  const meters = db.meters.getAll();
-  res.json(meters.map(m => ({ ...m, filter: JSON.parse(m.filter || '{}') })));
-});
+// 2. Meters (MOVED TO MODULAR ROUTES - see routes/meters.routes.ts)
+// app.post('/api/meters', ...) - Now in meters.controller.ts
+// app.get('/api/meters', ...) - Now in meters.controller.ts
 
 // 3. Ingest Events
 app.post('/api/events', async (req, res) => {
@@ -138,42 +122,9 @@ app.post('/api/events', async (req, res) => {
   }
 });
 
-// 4. Customers
-app.get('/api/customers', async (req, res) => {
-  try {
-    const customers = db.customers.getAll();
-    res.json(customers.map(c => ({
-      ...c,
-      billingAddress: JSON.parse(c.billingAddress as string || '{}'),
-      metadata: JSON.parse(c.metadata as string || '{}'),
-      subscriptions: [], // Populate if needed
-      appliedCoupons: []
-    })));
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to fetch customers' });
-  }
-});
-
-app.post('/api/customers', async (req, res) => {
-  try {
-    const { id, name, email, externalId, billingAddress, metadata } = req.body;
-    const customer = db.customers.create({
-      id,
-      name,
-      email,
-      externalId,
-      billingAddress: JSON.stringify(billingAddress || {}),
-      metadata: JSON.stringify(metadata || {}),
-      currency: 'USD',
-      customerType: 'individual'
-    });
-    res.json(customer);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to create customer' });
-  }
-});
+// 4. Customers (MOVED TO MODULAR ROUTES - see routes/customers.routes.ts)
+// app.get('/api/customers', ...) - Now in customers.controller.ts
+// app.post('/api/customers', ...) - Now in customers.controller.ts
 
 // 5. Plans
 app.get('/api/plans', async (req, res) => {
@@ -266,148 +217,9 @@ app.post('/api/subscriptions', async (req, res) => {
   }
 });
 
-// 6. Usage
-app.get('/api/usage/:customerId', async (req, res) => {
-  try {
-    const { customerId } = req.params;
-    const { from, to } = req.query;
-
-    const startDate = from ? new Date(from as string) : new Date(0);
-    const endDate = to ? new Date(to as string) : new Date();
-
-    // 1. Get Customer's Active Subscriptions
-    const subscriptions = db.subscriptions.filter(s =>
-      s.customerId === customerId && s.status === 'active'
-    );
-
-    // 2. Get Plans for these subscriptions
-    const planIds = subscriptions.map(s => s.planId);
-    const plans = db.plans.filter(p => planIds.includes(p.id));
-
-    // 3. Extract relevant Meter IDs from Plan Charges
-    const relevantMeterIds = new Set<string>();
-    for (const plan of plans) {
-      const charges = JSON.parse(plan.charges as string || '[]');
-      for (const charge of charges) {
-        if (charge.billableMetricId) {
-          relevantMeterIds.add(charge.billableMetricId);
-        }
-      }
-    }
-
-    // 4. Fetch only relevant meters
-    let meters: any[] = [];
-    if (relevantMeterIds.size > 0) {
-      meters = db.meters.filter(m => relevantMeterIds.has(m.id));
-    } else {
-      meters = [];
-    }
-
-    const usage = [];
-
-    for (const meter of meters) {
-      // Fetch events for this meter's schema and customer within range
-      const events = db.events.filter(e =>
-        e.eventSchemaId === meter.eventSchemaId &&
-        e.customerId === customerId &&
-        new Date(e.timestamp) >= startDate &&
-        new Date(e.timestamp) <= endDate
-      );
-
-      // Parse properties
-      const parsedEvents = events.map(e => ({
-        ...e,
-        properties: JSON.parse(e.properties),
-      }));
-
-      // Apply Filter
-      const rawFilter = JSON.parse(meter.filter || '[]');
-      const filters = Array.isArray(rawFilter) ? rawFilter : Object.entries(rawFilter).map(([k, v]) => ({ key: k, operator: 'equals', value: v }));
-
-      const filteredEvents = parsedEvents.filter(e => {
-        for (const filter of filters) {
-          const eventValue = e.properties[filter.key];
-          const targetValue = filter.value;
-
-          if (eventValue === undefined && filter.operator !== 'not_equals') return false;
-
-          switch (filter.operator) {
-            case 'equals':
-              if (String(eventValue) !== String(targetValue)) return false;
-              break;
-            case 'not_equals':
-              if (String(eventValue) === String(targetValue)) return false;
-              break;
-            case 'gt':
-              if (Number(eventValue) <= Number(targetValue)) return false;
-              break;
-            case 'lt':
-              if (Number(eventValue) >= Number(targetValue)) return false;
-              break;
-            case 'contains':
-              if (!String(eventValue).includes(String(targetValue))) return false;
-              break;
-            default:
-              if (String(eventValue) !== String(targetValue)) return false;
-          }
-        }
-        return true;
-      });
-
-      // Aggregate
-      let value = 0;
-      if (meter.aggregation === 'count') {
-        value = filteredEvents.length;
-      } else if (meter.aggregation === 'sum' && meter.field) {
-        value = filteredEvents.reduce((sum, e) => sum + (Number(e.properties[meter.field!]) || 0), 0);
-      } else if (meter.aggregation === 'max' && meter.field) {
-        value = Math.max(...filteredEvents.map(e => Number(e.properties[meter.field!]) || 0), 0);
-      } else if (meter.aggregation === 'unique_count' && meter.field) {
-        const uniqueValues = new Set(filteredEvents.map(e => e.properties[meter.field!]));
-        value = uniqueValues.size;
-      }
-
-      // Calculate Cost
-      let costCents = 0;
-      let currency = 'USD'; // Default
-
-      // Find the charge for this meter in the active plans
-      for (const plan of plans) {
-        const charges = JSON.parse(plan.charges as string || '[]');
-        const charge = charges.find((c: any) => c.billableMetricId === meter.id);
-
-        if (charge) {
-          currency = plan.currency;
-          const price = Number(charge.properties?.amountCents || 0);
-
-          if (charge.chargeModel === 'standard') {
-            costCents = value * price;
-          } else if (charge.chargeModel === 'package') {
-            const packageSize = Number(charge.properties?.packageSize || 1);
-            const packages = Math.ceil(value / packageSize);
-            costCents = packages * price;
-          }
-          // TODO: Implement volume/tiered pricing
-          break; // Assume one active charge per meter for now
-        }
-      }
-
-      usage.push({
-        meterId: meter.id,
-        meterName: meter.name,
-        value,
-        costCents,
-        currency,
-        window: { from: startDate, to: endDate },
-      });
-    }
-
-    res.json({ customerId, usage });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to calculate usage' });
-  }
-});
+// 6. Usage (MOVED TO MODULAR ROUTES - see routes/usage.routes.ts)
+// app.get('/api/usage/:customerId', ...) - Now in usage.controller.ts + usage.service.ts
+// Business logic extracted to services/usage.service.ts
 
 // 7. Events List (Recent Activity)
 app.get('/api/events/:customerId', async (req, res) => {
@@ -522,6 +334,10 @@ app.get('/api/analytics/usage-by-endpoint/:customerId', async (req, res) => {
   }
 });
 
+// Error handling middleware (must be last)
+app.use(errorHandler);
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`Modular routes active for: /api/meters, /api/customers, /api/usage`);
 });
