@@ -1,7 +1,7 @@
 import React from 'react';
 import { Download } from 'lucide-react';
 import { StatusBadge } from '../dashboard/StatusBadge';
-import { formatCurrency } from '../../../lib/utils';
+import { formatCurrency } from '../../lib/utils';
 
 /**
  * InvoiceHistorySection Component

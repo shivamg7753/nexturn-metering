@@ -1,6 +1,6 @@
 import React from 'react';
 import { Mail, Clock } from 'lucide-react';
-import { formatCurrency } from '../../../lib/utils';
+import { formatCurrency } from '../../lib/utils';
 
 /**
  * CustomerHeader Component

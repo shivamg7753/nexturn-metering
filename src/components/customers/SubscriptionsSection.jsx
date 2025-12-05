@@ -1,6 +1,6 @@
 import React from 'react';
 import { StatusBadge } from '../dashboard/StatusBadge';
-import { formatCurrency } from '../../../lib/utils';
+import { formatCurrency } from '../../lib/utils';
 import { SubscriptionForm } from '../features/subscriptions/SubscriptionForm';
 import { SubscriptionManager } from '../features/subscriptions/SubscriptionManager';
 

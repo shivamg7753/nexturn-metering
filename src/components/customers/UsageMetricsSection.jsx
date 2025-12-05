@@ -1,6 +1,6 @@
 import React from 'react';
 import { TrendingUp } from 'lucide-react';
-import { formatCurrency } from '../../../lib/utils';
+import { formatCurrency } from '../../lib/utils';
 
 /**
  * UsageMetricsSection Component
