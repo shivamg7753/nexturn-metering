@@ -14,11 +14,13 @@ export const EventSchemasTab = () => {
         sortBy,
         setSortBy,
         createSchema,
+        updateSchema,
     } = useSchemas();
 
     const [viewMode, setViewMode] = useState('card'); // 'card' or 'list'
     const [isCreating, setIsCreating] = useState(false);
     const [viewingSchema, setViewingSchema] = useState(null);
+    const [editingSchema, setEditingSchema] = useState(null);
 
     const handleCreateSchema = async (schemaData) => {
         const result = await createSchema(schemaData);
@@ -27,14 +29,57 @@ export const EventSchemasTab = () => {
         }
     };
 
+    const handleUpdateSchema = async (schemaData) => {
+        const result = await updateSchema(editingSchema.id, schemaData);
+        if (result.success) {
+            setEditingSchema(false);
+            setViewingSchema(null); // Go back to list or stay on detail? Let's go to list.
+        }
+    };
+
+    const handleToggleStatus = async (schema) => {
+        let newStatus = 'active';
+        if (schema.status === 'active') newStatus = 'archived';
+        else if (schema.status === 'archived') newStatus = 'active';
+        else if (schema.status === 'draft') newStatus = 'active';
+
+        const successMessage = newStatus === 'active'
+            ? 'Schema is now Active'
+            : newStatus === 'archived'
+                ? 'Schema has been Archived'
+                : 'Schema status updated';
+
+        const result = await updateSchema(schema.id, { status: newStatus }, { successMessage });
+        if (result.success) {
+            setViewingSchema({ ...schema, status: newStatus });
+        }
+    };
+
     // Show detail view if viewing a schema
     if (viewingSchema) {
-        return <SchemaDetailView schema={viewingSchema} onBack={() => setViewingSchema(null)} />;
+        return <SchemaDetailView
+            schema={viewingSchema}
+            onBack={() => setViewingSchema(null)}
+            onEdit={() => {
+                setEditingSchema(viewingSchema);
+                setViewingSchema(null);
+            }}
+            onToggleStatus={() => handleToggleStatus(viewingSchema)}
+        />;
     }
 
     // Show creation form if creating
     if (isCreating) {
         return <SchemaCreationForm onSubmit={handleCreateSchema} onCancel={() => setIsCreating(false)} />;
+    }
+
+    // Show editing form if editing
+    if (editingSchema) {
+        return <SchemaCreationForm
+            initialData={editingSchema}
+            onSubmit={handleUpdateSchema}
+            onCancel={() => setEditingSchema(null)}
+        />;
     }
 
     // Main list view

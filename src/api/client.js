@@ -14,6 +14,14 @@ export const api = {
     });
     return res.json();
   },
+  updateSchema: async (data) => {
+    const res = await fetch(`${API_URL}/schemas/${data.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
 
   // Meters
   getMeters: async () => {
@@ -23,6 +31,14 @@ export const api = {
   createMeter: async (data) => {
     const res = await fetch(`${API_URL}/meters`, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+  updateMeter: async (data) => {
+    const res = await fetch(`${API_URL}/meters/${data.id}`, {
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
@@ -93,6 +109,14 @@ export const api = {
     });
     return res.json();
   },
+  updateAddOn: async (data) => {
+    const res = await fetch(`${API_URL}/addons/${data.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
 
   // Features
   getFeatures: async () => {
@@ -102,6 +126,14 @@ export const api = {
   createFeature: async (data) => {
     const res = await fetch(`${API_URL}/features`, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+  updateFeature: async (data) => {
+    const res = await fetch(`${API_URL}/features/${data.id}`, {
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });

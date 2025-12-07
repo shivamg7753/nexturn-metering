@@ -1,10 +1,41 @@
-﻿import React, { useState } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useApp } from '../../../context/store';
 import { api } from '../../../api/client';
 import { generateId } from '../../../lib/utils';
 import { X, Plus, ChevronRight, DollarSign, Activity, Gift, Users, Shield, Edit2, Copy, Trash2, MoreVertical } from 'lucide-react';
 
 
+
+const getChargePrice = (charge) => {
+  if (charge.amountCents !== undefined) {
+    return `USD ${charge.amountCents}`;
+  }
+  if (charge.tiers && charge.tiers.length > 0) {
+    const firstTier = charge.tiers[0];
+    if (firstTier.type === 'package') {
+      return `USD ${firstTier.unitAmountCents || 0}`;
+    }
+    if (charge.chargeModel === 'tiered' || charge.chargeModel === 'volume') {
+      return `Flat for first ${firstTier.lastUnit || '∞'}`;
+    }
+    return `USD ${firstTier.unitAmountCents || 0}`;
+  }
+  return 'USD 0';
+};
+
+const getChargeSubtext = (charge) => {
+  if (charge.type === 'license' && charge.properties?.addonName) {
+    return `Flat licenses`;
+  }
+  if (charge.type === 'usage' && charge.tiers && charge.tiers.length > 0) {
+    const firstTier = charge.tiers[0];
+    if (firstTier.lastUnit) {
+      return `Flat for first ${firstTier.lastUnit}`;
+    }
+  }
+  return '';
+};
 
 export const PlanForm = ({ onClose, initialData }) => {
   const { dispatch, state } = useApp();
@@ -27,7 +58,18 @@ export const PlanForm = ({ onClose, initialData }) => {
     charges: [],
   });
 
-  const handleSubmit = () => {
+  // Fetch features on mount if not already in state
+  useEffect(() => {
+    if (!state.features || state.features.length === 0) {
+      api.getFeatures().then(features => {
+        dispatch({ type: 'SET_FEATURES', payload: features });
+      }).catch(err => {
+        console.error('Failed to fetch features:', err);
+      });
+    }
+  }, []);
+
+  const handleSubmit = (status = 'active') => {
     const plan = {
       id: initialData?.id || generateId('plan_'),
       name: formData.name,
@@ -40,6 +82,7 @@ export const PlanForm = ({ onClose, initialData }) => {
       payInAdvance: formData.payInAdvance,
       trialPeriod: Number(formData.trialPeriod),
       charges: formData.charges || [],
+      status,
       createdAt: initialData?.createdAt || new Date().toISOString(),
     };
 
@@ -140,7 +183,7 @@ export const PlanForm = ({ onClose, initialData }) => {
 
   return (
     <div className="max-w-7xl mx-auto py-6 px-4">
-      <div className="bg-white rounded-xl shadow-xl w-full overflow-hidden flex flex-col">
+      <div className="bg-white rounded-xl shadow-xl w-full flex flex-col">
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
           <div>
@@ -200,28 +243,87 @@ export const PlanForm = ({ onClose, initialData }) => {
 
             {/* Preview Pane */}
             <div className="col-span-1 bg-gray-50 p-6">
-              <h3 className="text-sm font-semibold text-gray-900 mb-4">PREVIEW</h3>
-              <div className="bg-white rounded-lg border border-gray-200 p-4">
-                <h4 className="text-lg font-bold text-gray-900">{formData.name || 'Plan Name'}</h4>
-                <div className="mt-4">
-                  <span className="text-2xl font-bold text-gray-900">
-                    ${((formData.amountCents || 0) / 100).toFixed(2)}
-                  </span>
-                  <span className="text-sm text-gray-500 ml-1">{getIntervalLabel()}</span>
-                </div>
-                <p className="text-sm text-gray-600 mt-3">{formData.description || 'No description'}</p>
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">PREVIEW</h3>
+              <div className="bg-white rounded-lg border border-gray-200 p-5">
+                {/* Plan Name */}
+                <h4 className="text-lg font-bold text-gray-900 mb-3">
+                  {formData.name || 'Plan Name'}
+                </h4>
 
+                {/* Currency Badge */}
+                <div className="mb-2">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    {formData.currency || 'USD'}
+                  </span>
+                </div>
+
+                {/* Billing Cycle */}
+                <p className="text-sm text-gray-600 mb-4">
+                  {formData.type === 'one_time'
+                    ? 'One-time'
+                    : `Recurring: ${formData.interval ? formData.interval.charAt(0).toUpperCase() + formData.interval.slice(1) : 'Monthly'}`
+                  }
+                </p>
+
+                {/* Currency Dropdown */}
+                <div className="mb-4">
+                  <select
+                    value={formData.currency}
+                    onChange={e => setFormData({ ...formData, currency: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  >
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                  </select>
+                </div>
+
+                {/* LINE ITEMS Section */}
                 {formData.charges && formData.charges.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-gray-100">
-                    <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Rate Cards</p>
-                    <div className="space-y-1">
-                      {formData.charges.map((charge, idx) => (
-                        <div key={idx} className="text-xs text-gray-600 flex items-center gap-2">
-                          {React.createElement(getRateCardIcon(charge.type), { className: 'w-3 h-3' })}
-                          <span>{getRateCardLabel(charge)}</span>
-                        </div>
-                      ))}
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="flex justify-between items-center mb-3">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">LINE ITEMS</p>
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">PRICE</p>
                     </div>
+                    <div className="space-y-3">
+                      {formData.charges.map((charge, idx) => {
+                        const price = getChargePrice(charge);
+                        const subtext = getChargeSubtext(charge);
+
+                        return (
+                          <div key={idx} className="border-b border-gray-100 pb-3 last:border-b-0 last:pb-0">
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-gray-900">
+                                  {charge.name || getRateCardLabel(charge)}
+                                </p>
+                                {subtext && (
+                                  <p className="text-xs text-gray-500 mt-0.5">
+                                    {subtext}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="text-right ml-4">
+                                <p className="text-sm font-semibold text-gray-900">
+                                  {price}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Empty State for Line Items */}
+                {(!formData.charges || formData.charges.length === 0) && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="flex justify-between items-center mb-3">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">LINE ITEMS</p>
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">PRICE</p>
+                    </div>
+                    <p className="text-sm text-gray-400 text-center py-4">No rate cards added</p>
                   </div>
                 )}
               </div>
@@ -256,12 +358,21 @@ export const PlanForm = ({ onClose, initialData }) => {
               </button>
             )}
             {currentStep === 'ratecards' && (
-              <button
-                onClick={handleSubmit}
-                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
-              >
-                {initialData ? 'Save Changes' : 'Create Plan'}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleSubmit('draft')}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Save as Draft
+                </button>
+                <button
+                  onClick={() => handleSubmit('active')}
+                  className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
+                >
+                  {initialData ? 'Save Changes' : 'Publish Plan'}
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -410,9 +521,74 @@ const BillingDetailsStep = ({ formData, setFormData }) => (
   </div>
 );
 
+// Dropdown Menu Component using Portal
+const DropdownMenu = ({ buttonRef, isOpen, onClose, onEdit, onClone, onRemove }) => {
+  const [position, setPosition] = useState({ top: 0, left: 0 });
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const buttonRect = buttonRef.current.getBoundingClientRect();
+      const menuHeight = 132;
+      const spaceBelow = window.innerHeight - buttonRect.bottom;
+      const spaceAbove = buttonRect.top;
+
+      let top = buttonRect.bottom + window.scrollY;
+
+      if (spaceBelow < menuHeight && spaceAbove > menuHeight) {
+        top = buttonRect.top + window.scrollY - menuHeight;
+      }
+
+      setPosition({
+        top,
+        left: buttonRect.right + window.scrollX - 160
+      });
+    }
+  }, [isOpen, buttonRef]);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target) &&
+        buttonRef.current && !buttonRef.current.contains(e.target)) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen, onClose, buttonRef]);
+
+  if (!isOpen) return null;
+
+  return createPortal(
+    <div
+      ref={menuRef}
+      className="fixed w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50"
+      style={{ top: `${position.top}px`, left: `${position.left}px` }}
+    >
+      <button onClick={() => { onEdit(); onClose(); }} className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+        <Edit2 className="w-4 h-4" />
+        Edit
+      </button>
+      <button onClick={() => { onClone(); onClose(); }} className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+        <Copy className="w-4 h-4" />
+        Clone
+      </button>
+      <button onClick={() => { onRemove(); onClose(); }} className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2">
+        <Trash2 className="w-4 h-4" />
+        Delete
+      </button>
+    </div>,
+    document.body
+  );
+};
+
 // Rate Cards Step Component
 const RateCardsStep = ({ charges, onAddClick, onRemove, onClone, onEdit, getRateCardLabel, getRateCardIcon, showMenu, onMenuSelect }) => {
   const [openMenuIndex, setOpenMenuIndex] = React.useState(null);
+  const buttonRefs = React.useRef([]);
 
   const getChargeTag = (charge) => {
     if (charge.properties?.invoiceAssociation) {
@@ -421,35 +597,6 @@ const RateCardsStep = ({ charges, onAddClick, onRemove, onClone, onEdit, getRate
     return '-';
   };
 
-  const getChargePrice = (charge) => {
-    if (charge.amountCents !== undefined) {
-      return `USD ${charge.amountCents}`;
-    }
-    if (charge.tiers && charge.tiers.length > 0) {
-      const firstTier = charge.tiers[0];
-      if (firstTier.type === 'package') {
-        return `USD ${firstTier.unitAmountCents || 0}`;
-      }
-      if (charge.chargeModel === 'tiered' || charge.chargeModel === 'volume') {
-        return `Flat for first ${firstTier.lastUnit || '∞'}`;
-      }
-      return `USD ${firstTier.unitAmountCents || 0}`;
-    }
-    return 'USD 0';
-  };
-
-  const getChargeSubtext = (charge) => {
-    if (charge.type === 'license' && charge.properties?.addonName) {
-      return `Flat licenses`;
-    }
-    if (charge.type === 'usage' && charge.tiers && charge.tiers.length > 0) {
-      const firstTier = charge.tiers[0];
-      if (firstTier.lastUnit) {
-        return `Flat for first ${firstTier.lastUnit}`;
-      }
-    }
-    return '';
-  };
 
   return (
     <div className="space-y-6">
@@ -553,8 +700,9 @@ const RateCardsStep = ({ charges, onAddClick, onRemove, onClone, onEdit, getRate
                 </div>
 
                 {/* Actions Column */}
-                <div className="col-span-1 flex justify-end relative">
+                <div className="col-span-1 flex justify-end">
                   <button
+                    ref={el => buttonRefs.current[idx] = el}
                     onClick={() => setOpenMenuIndex(openMenuIndex === idx ? null : idx)}
                     className="text-gray-400 hover:text-gray-600 p-1.5 rounded hover:bg-gray-100 transition-colors"
                     title="More actions"
@@ -562,53 +710,14 @@ const RateCardsStep = ({ charges, onAddClick, onRemove, onClone, onEdit, getRate
                     <MoreVertical className="w-4 h-4" />
                   </button>
 
-                  {openMenuIndex === idx && (
-                    <>
-                      {/* Backdrop to close menu */}
-                      <div
-                        className="fixed inset-0 z-10"
-                        onClick={() => setOpenMenuIndex(null)}
-                      />
-
-                      {/* Dropdown Menu */}
-                      <div
-                        className={`absolute right-0 z-20 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 
-  ${idx >= charges.length - 1 ? 'bottom-8' : 'top-8'}`}
-                      >
-
-                        <button
-                          onClick={() => {
-                            onEdit(idx);
-                            setOpenMenuIndex(null);
-                          }}
-                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => {
-                            onClone(idx);
-                            setOpenMenuIndex(null);
-                          }}
-                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                        >
-                          <Copy className="w-4 h-4" />
-                          Clone
-                        </button>
-                        <button
-                          onClick={() => {
-                            onRemove(idx);
-                            setOpenMenuIndex(null);
-                          }}
-                          className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          Delete
-                        </button>
-                      </div>
-                    </>
-                  )}
+                  <DropdownMenu
+                    buttonRef={{ current: buttonRefs.current[idx] }}
+                    isOpen={openMenuIndex === idx}
+                    onClose={() => setOpenMenuIndex(null)}
+                    onEdit={() => onEdit(idx)}
+                    onClone={() => onClone(idx)}
+                    onRemove={() => onRemove(idx)}
+                  />
                 </div>
               </div>
             );
@@ -618,6 +727,35 @@ const RateCardsStep = ({ charges, onAddClick, onRemove, onClone, onEdit, getRate
     </div>
   );
 };
+
+// Reusable Standard Modal Component (Single Screen)
+const StandardModal = ({ title, children, onClose, onSave, saveLabel = "Submit" }) => (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]">
+    <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl">
+      <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+        <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+      <div className="p-6 max-h-[60vh] overflow-y-auto">{children}</div>
+      <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
+        <button
+          onClick={onClose}
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={onSave}
+          className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
+        >
+          {saveLabel}
+        </button>
+      </div>
+    </div>
+  </div>
+);
 
 // Reusable Wizard Modal Component
 const WizardModal = ({ title, children, onClose, onSave, currentStep, totalSteps, onNext, onBack }) => (
@@ -742,14 +880,11 @@ const FixedFeeModal = ({ onClose, onSave, addOns, initialData }) => {
   };
 
   return (
-    <WizardModal
+    <StandardModal
       title={initialData ? "Edit Fixed Fee Rate Card" : "Add Fixed Fee Rate Card"}
       onClose={onClose}
       onSave={handleSave}
-      currentStep={1}
-      totalSteps={1}
-      onNext={() => { }}
-      onBack={() => { }}
+      saveLabel="Submit"
     >
       <div className="space-y-5">
         <div>
@@ -851,51 +986,51 @@ const FixedFeeModal = ({ onClose, onSave, addOns, initialData }) => {
           </div>
         </div>
 
-        {type === 'recurring' && (
-          <div className="grid grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Recurrence Interval</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min="1"
-                  value={recurrenceInterval}
-                  onChange={e => setRecurrenceInterval(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
-                />
-                <div className="flex gap-1">
-                  <button onClick={() => setRecurrenceInterval(prev => Math.max(1, prev - 1))} className="p-2 text-gray-400 hover:text-gray-600 border rounded hover:bg-gray-50">
-                    -
-                  </button>
-                  <button onClick={() => setRecurrenceInterval(prev => prev + 1)} className="p-2 text-gray-400 hover:text-gray-600 border rounded hover:bg-gray-50">
-                    +
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Recurrence Offset</label>
-              <div className="flex items-center gap-2">
-                <div className="relative w-full">
-                  <input
-                    type="text"
-                    value={`Recurrence ${recurrenceOffset}`}
-                    readOnly
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
-                  />
-                </div>
-                <div className="flex gap-1">
-                  <button onClick={() => setRecurrenceOffset(prev => Math.max(0, prev - 1))} className="p-2 text-gray-400 hover:text-gray-600 border rounded hover:bg-gray-50">
-                    -
-                  </button>
-                  <button onClick={() => setRecurrenceOffset(prev => prev + 1)} className="p-2 text-gray-400 hover:text-gray-600 border rounded hover:bg-gray-50">
-                    +
-                  </button>
-                </div>
+        <div className="grid grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Recurrence Interval</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="1"
+                value={recurrenceInterval}
+                onChange={e => setRecurrenceInterval(Number(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                disabled={type !== 'recurring'}
+              />
+              <div className="flex gap-1">
+                <button disabled={type !== 'recurring'} onClick={() => setRecurrenceInterval(prev => Math.max(1, prev - 1))} className="p-2 text-gray-400 hover:text-gray-600 border rounded hover:bg-gray-50 disabled:opacity-50">
+                  -
+                </button>
+                <button disabled={type !== 'recurring'} onClick={() => setRecurrenceInterval(prev => prev + 1)} className="p-2 text-gray-400 hover:text-gray-600 border rounded hover:bg-gray-50 disabled:opacity-50">
+                  +
+                </button>
               </div>
             </div>
           </div>
-        )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Recurrence Offset</label>
+            <div className="flex items-center gap-2">
+              <div className="relative w-full">
+                <input
+                  type="text"
+                  value={`Recurrence ${recurrenceOffset}`}
+                  readOnly
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
+                  disabled={type !== 'recurring'}
+                />
+              </div>
+              <div className="flex gap-1">
+                <button disabled={type !== 'recurring'} onClick={() => setRecurrenceOffset(prev => Math.max(0, prev - 1))} className="p-2 text-gray-400 hover:text-gray-600 border rounded hover:bg-gray-50 disabled:opacity-50">
+                  -
+                </button>
+                <button disabled={type !== 'recurring'} onClick={() => setRecurrenceOffset(prev => prev + 1)} className="p-2 text-gray-400 hover:text-gray-600 border rounded hover:bg-gray-50 disabled:opacity-50">
+                  +
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">USD price</label>
@@ -937,7 +1072,7 @@ const FixedFeeModal = ({ onClose, onSave, addOns, initialData }) => {
           )}
         </div>
       </div>
-    </WizardModal>
+    </StandardModal>
   );
 };
 
@@ -1678,6 +1813,24 @@ const EntitlementModal = ({ onClose, onSave, features, initialData }) => {
   const [expiryValue, setExpiryValue] = useState(initialData?.properties?.expiryValue || '');
   const [expiryUnit, setExpiryUnit] = useState(initialData?.properties?.expiryUnit || 'days');
   const [availableDimensions, setAvailableDimensions] = useState([]);
+  const [availableFeatures, setAvailableFeatures] = useState([]);
+
+  // Fetch features on mount
+  React.useEffect(() => {
+    const fetchFeatures = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/api/features');
+        const featuresData = await response.json();
+        console.log('Fetched features:', featuresData);
+        setAvailableFeatures(featuresData);
+      } catch (error) {
+        console.error('Error fetching features:', error);
+        setAvailableFeatures([]);
+      }
+    };
+
+    fetchFeatures();
+  }, []);
 
   // Fetch all schemas and extract dimensions on mount
   React.useEffect(() => {
@@ -1780,7 +1933,7 @@ const EntitlementModal = ({ onClose, onSave, features, initialData }) => {
               value={featureId}
               onChange={e => {
                 setFeatureId(e.target.value);
-                const selectedFeature = features.find(f => f.id === e.target.value);
+                const selectedFeature = availableFeatures.find(f => f.id === e.target.value);
                 if (selectedFeature) {
                   setFeatureName(selectedFeature.name);
                 }
@@ -1788,11 +1941,11 @@ const EntitlementModal = ({ onClose, onSave, features, initialData }) => {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
             >
               <option value="">Select feature...</option>
-              {features.map(f => (
+              {availableFeatures.map(f => (
                 <option key={f.id} value={f.id}>{f.name}</option>
               ))}
             </select>
-            {features.length === 0 && (
+            {availableFeatures.length === 0 && (
               <p className="mt-1 text-xs text-amber-600">
                 No features available. Please create a feature first.
               </p>

@@ -6,12 +6,16 @@ import { ChevronLeft, Edit2, AlertCircle } from 'lucide-react';
  * SchemaDetailView Component
  * Displays detailed information about an event schema with tabs matching Togai layout
  */
-export const SchemaDetailView = ({ schema, onBack }) => {
+export const SchemaDetailView = ({ schema, onBack, onEdit, onToggleStatus }) => {
     const [activeTab, setActiveTab] = useState('definition');
 
+    // ... (keep handleToggleStatus same)
+
     const handleToggleStatus = () => {
-        toast.success('Status toggled successfully!');
+        onToggleStatus();
     };
+
+    // ... (structure and format functions same)
 
     const structure = typeof schema.dimensions === 'string'
         ? JSON.parse(schema.dimensions)
@@ -48,43 +52,61 @@ export const SchemaDetailView = ({ schema, onBack }) => {
         return `${days} day${days !== 1 ? 's' : ''} ago`;
     };
 
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'active': return 'text-green-700 bg-green-50 border-green-200';
+            case 'draft': return 'text-yellow-700 bg-yellow-50 border-yellow-200';
+            case 'archived': return 'text-gray-700 bg-gray-50 border-gray-200';
+            default: return 'text-gray-700 bg-gray-50 border-gray-200';
+        }
+    };
+
+    const isEditable = schema.status === 'draft' || schema.status === 'archived' || !schema.status;
+
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <div className="bg-white border-b border-gray-200 px-8 py-4">
-                <div className="flex items-center justify-between">
-                    <button
-                        onClick={onBack}
-                        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-                    >
-                        <ChevronLeft className="w-5 h-5" />
-                        <span className="font-medium">Back to All Event Schemas</span>
-                    </button>
-                    <button className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-                        <Edit2 className="w-4 h-4" />
-                        <span className="font-medium">Edit Event Schema</span>
-                    </button>
-                </div>
-            </div>
 
             {/* Schema Header */}
             <div className="bg-white px-8 py-6 border-b border-gray-200">
                 <div className="flex items-center gap-4">
-                    <div className="p-3 bg-indigo-100 rounded-full">
-                        <svg className="w-6 h-6 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
-                            <circle cx="10" cy="10" r="8" />
-                        </svg>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={onBack}
+                            title="Back to All Event Schemas"
+                            className="p-3 bg-white border border-gray-200 rounded-full hover:bg-gray-50 transition-colors"
+                        >
+                            <ChevronLeft className="w-4 h-4 text-gray-600 opacity-60" />
+                        </button>
                     </div>
                     <h1 className="text-2xl font-semibold text-gray-900">{schema.name}</h1>
-                    <span className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium text-green-700 bg-green-50 rounded border border-green-200">
-                        • Active
+                    <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded border ${getStatusColor(schema.status)}`}>
+                        • {schema.status ? schema.status.charAt(0).toUpperCase() + schema.status.slice(1) : 'Draft'}
                     </span>
-                    <button
-                        onClick={handleToggleStatus}
-                        className="ml-auto relative inline-flex h-6 w-11 items-center rounded-full bg-indigo-600 transition-colors hover:bg-indigo-700"
-                    >
-                        <span className="inline-block h-4 w-4 transform translate-x-6 rounded-full bg-white transition-transform" />
-                    </button>
+                    <div className="ml-auto flex items-center gap-4">
+                        <button
+                            onClick={onEdit}
+                            disabled={!isEditable}
+                            title={!isEditable ? "Switch to Draft status to edit" : "Edit Event Schema"}
+                            className={`p-2 rounded-full transition-colors ${isEditable
+                                ? 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                                : 'text-gray-300 cursor-not-allowed'
+                                }`}
+                        >
+                            <Edit2 className="w-5 h-5" />
+                        </button>
+                        <div className="h-6 w-px bg-gray-200 mx-2"></div>
+                        <span className="text-sm font-medium text-gray-500 mr-2">
+                            {schema.status === 'active' ? 'Active' : 'Archived'}
+                        </span>
+                        <button
+                            onClick={handleToggleStatus}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${schema.status === 'active' ? 'bg-indigo-600' : 'bg-gray-200'
+                                }`}
+                        >
+                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${schema.status === 'active' ? 'translate-x-6' : 'translate-x-1'
+                                }`} />
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -98,8 +120,8 @@ export const SchemaDetailView = ({ schema, onBack }) => {
                                 <button
                                     onClick={() => setActiveTab('definition')}
                                     className={`pb-3 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'definition'
-                                            ? 'border-gray-900 text-gray-900'
-                                            : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                                        ? 'border-gray-900 text-gray-900'
+                                        : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
                                         }`}
                                 >
                                     Schema Definition ({schemaAttributes.length})
@@ -107,8 +129,8 @@ export const SchemaDetailView = ({ schema, onBack }) => {
                                 <button
                                     onClick={() => setActiveTab('enriched')}
                                     className={`pb-3 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'enriched'
-                                            ? 'border-gray-900 text-gray-900'
-                                            : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                                        ? 'border-gray-900 text-gray-900'
+                                        : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
                                         }`}
                                 >
                                     Enriched Values (0)
@@ -116,8 +138,8 @@ export const SchemaDetailView = ({ schema, onBack }) => {
                                 <button
                                     onClick={() => setActiveTab('ingest')}
                                     className={`pb-3 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'ingest'
-                                            ? 'border-gray-900 text-gray-900'
-                                            : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                                        ? 'border-gray-900 text-gray-900'
+                                        : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
                                         }`}
                                 >
                                     Ingest data
@@ -235,11 +257,11 @@ export const SchemaDetailView = ({ schema, onBack }) => {
                             <div className="border-t border-gray-200 pt-4 space-y-2">
                                 <div>
                                     <p className="text-xs text-gray-500">Created</p>
-                                    <p className="text-sm text-gray-900">{formatDate(schema.created_at)}</p>
+                                    <p className="text-sm text-gray-900">{formatDate(schema.createdAt)}</p>
                                 </div>
                                 <div>
                                     <p className="text-xs text-gray-500">Last Updated</p>
-                                    <p className="text-sm text-gray-900">{formatTimeAgo(schema.updated_at || schema.created_at)}</p>
+                                    <p className="text-sm text-gray-900">{formatTimeAgo(schema.updatedAt || schema.createdAt)}</p>
                                 </div>
                             </div>
                         </div>

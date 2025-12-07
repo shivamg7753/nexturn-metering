@@ -8,3 +8,5 @@ export { FeatureForm } from './FeatureForm';
 export { AssociationInput } from './AssociationInput';
 export { EmptyFeaturesState } from './EmptyFeaturesState';
 export { FeaturesGrid } from './FeaturesGrid';
+export { FeaturesList } from './FeaturesList';
+export { FeatureDetail } from './FeatureDetail';

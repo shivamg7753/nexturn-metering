@@ -45,8 +45,12 @@ const appReducer = (state, action) => {
             return { ...state, billableMetrics: state.billableMetrics.filter(m => m.id !== action.payload) };
         case 'ADD_ADDON':
             return { ...state, addOns: [...state.addOns, action.payload] };
+        case 'UPDATE_ADDON':
+            return { ...state, addOns: state.addOns.map(a => a.id === action.payload.id ? action.payload : a) };
         case 'ADD_FEATURE':
             return { ...state, features: [...state.features, action.payload] };
+        case 'UPDATE_FEATURE':
+            return { ...state, features: state.features.map(f => f.id === action.payload.id ? action.payload : f) };
         case 'ADD_SUBSCRIPTION':
             return { ...state, subscriptions: [...state.subscriptions, action.payload] };
         case 'UPDATE_SUBSCRIPTION':

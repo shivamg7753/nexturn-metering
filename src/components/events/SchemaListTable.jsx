@@ -20,6 +20,15 @@ export const SchemaListTable = ({ schemas, onSchemaClick }) => {
         return `${days} day${days !== 1 ? 's' : ''} ago`;
     };
 
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'active': return 'text-green-700 bg-green-50 border-green-200';
+            case 'draft': return 'text-yellow-700 bg-yellow-50 border-yellow-200';
+            case 'archived': return 'text-gray-700 bg-gray-50 border-gray-200';
+            default: return 'text-gray-700 bg-gray-50 border-gray-200';
+        }
+    };
+
     return (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             <table className="w-full">
@@ -52,8 +61,8 @@ export const SchemaListTable = ({ schemas, onSchemaClick }) => {
                                     <span className="font-medium text-gray-900">{schema.name}</span>
                                 </td>
                                 <td className="px-6 py-4">
-                                    <span className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium text-green-700 bg-green-50 rounded border border-green-200">
-                                        • Active
+                                    <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded border ${getStatusColor(schema.status)}`}>
+                                        • {schema.status ? schema.status.charAt(0).toUpperCase() + schema.status.slice(1) : 'Draft'}
                                     </span>
                                 </td>
                                 <td className="px-6 py-4">
@@ -67,7 +76,7 @@ export const SchemaListTable = ({ schemas, onSchemaClick }) => {
                                 </td>
                                 <td className="px-6 py-4">
                                     <span className="text-sm text-gray-500">
-                                        {formatTimeAgo(schema.updated_at || schema.created_at)}
+                                        {formatTimeAgo(schema.updatedAt || schema.createdAt)}
                                     </span>
                                 </td>
                             </tr>

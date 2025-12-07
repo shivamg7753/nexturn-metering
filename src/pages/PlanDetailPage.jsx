@@ -41,8 +41,8 @@ export const PlanDetailPage = () => {
   };
 
   const handleClone = () => {
-    // Clone charges with new IDs
-    const clonedCharges = plan.charges.map(charge => ({
+    // Clone charges with new IDs (handle undefined/null charges)
+    const clonedCharges = (plan.charges || []).map(charge => ({
       ...charge,
       id: generateId('chg_'),
     }));
@@ -52,7 +52,7 @@ export const PlanDetailPage = () => {
       id: generateId('plan_'),
       name: `${plan.name} (Copy)`,
       charges: clonedCharges,
-      status: 'inactive', // Set cloned plans to inactive by default
+      status: 'draft', // Set cloned plans to draft by default
       createdAt: new Date().toISOString(),
     };
 

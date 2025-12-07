@@ -1,11 +1,17 @@
 import React from 'react';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, LayoutGrid, List } from 'lucide-react';
 
 /**
  * FeaturesHeader Component
- * Search and create button for features list
+ * Search, view toggle, and create button for features list
  */
-export const FeaturesHeader = ({ searchTerm, onSearchChange, onCreate }) => {
+export const FeaturesHeader = ({
+    searchTerm,
+    onSearchChange,
+    onCreate,
+    viewMode,
+    onViewChange
+}) => {
     return (
         <div className="flex justify-between items-center">
             <div className="relative flex-1 max-w-md">
@@ -18,13 +24,33 @@ export const FeaturesHeader = ({ searchTerm, onSearchChange, onCreate }) => {
                     onChange={(e) => onSearchChange(e.target.value)}
                 />
             </div>
-            <button
-                onClick={onCreate}
-                className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-            >
-                <Plus className="h-5 w-5 mr-2" />
-                New Feature
-            </button>
+
+            <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 border-r border-gray-200 pr-4">
+                    <button
+                        onClick={() => onViewChange('grid')}
+                        className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
+                        title="Grid View"
+                    >
+                        <LayoutGrid className="w-5 h-5" />
+                    </button>
+                    <button
+                        onClick={() => onViewChange('list')}
+                        className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
+                        title="List View"
+                    >
+                        <List className="w-5 h-5" />
+                    </button>
+                </div>
+
+                <button
+                    onClick={onCreate}
+                    className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                >
+                    <Plus className="h-5 w-5 mr-2" />
+                    New Feature
+                </button>
+            </div>
         </div>
     );
 };

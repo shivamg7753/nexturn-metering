@@ -30,7 +30,7 @@ export const FeatureForm = ({
                     >
                         <ChevronLeft className="w-5 h-5" />
                     </button>
-                    <h1 className="text-xl font-bold text-gray-900">Create a new Feature</h1>
+                    <h1 className="text-xl font-bold text-gray-900">{name ? 'Edit Feature' : 'Create a new Feature'}</h1>
                 </div>
             </div>
 
@@ -113,7 +113,7 @@ export const FeatureForm = ({
                             type="submit"
                             className="px-6 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 shadow-sm transition-colors"
                         >
-                            Publish Feature
+                            {name ? 'Update Feature' : 'Publish Feature'}
                         </button>
                     </div>
                 </form>

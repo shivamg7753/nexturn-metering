@@ -15,6 +15,15 @@ export const SchemaCard = ({ schema, onClick }) => {
     const isLegacy = !Array.isArray(attributes) && !Array.isArray(dimensions);
     const legacyKeys = isLegacy ? Object.keys(structure) : [];
 
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'active': return 'text-green-700 bg-green-50 border-green-200';
+            case 'draft': return 'text-yellow-700 bg-yellow-50 border-yellow-200';
+            case 'archived': return 'text-gray-700 bg-gray-50 border-gray-200';
+            default: return 'text-gray-700 bg-gray-50 border-gray-200';
+        }
+    };
+
     return (
         <div
             onClick={onClick}
@@ -24,6 +33,9 @@ export const SchemaCard = ({ schema, onClick }) => {
                 <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
                     <Code className="w-5 h-5" />
                 </div>
+                <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded border ${getStatusColor(schema.status)}`}>
+                    • {schema.status ? schema.status.charAt(0).toUpperCase() + schema.status.slice(1) : 'Draft'}
+                </span>
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">{schema.name}</h3>
             <p className="text-sm text-gray-500 mb-4">{schema.description || 'No description provided.'}</p>

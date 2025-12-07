@@ -5,13 +5,22 @@ import { ChevronLeft, Plus, Trash2 } from 'lucide-react';
  * SchemaCreationForm Component
  * Form for creating new event schemas
  */
-export const SchemaCreationForm = ({ onSubmit, onCancel }) => {
-    const [name, setName] = useState('');
-    const [description, setDescription] = useState('');
-    const [attributes, setAttributes] = useState([]);
-    const [dimensions, setDimensions] = useState([]);
-    const [dependencies, setDependencies] = useState([]);
-    const [enrichments, setEnrichments] = useState([]);
+export const SchemaCreationForm = ({ onSubmit, onCancel, initialData }) => {
+    const parseDimensions = (data) => {
+        if (!data) return { attributes: [], dimensions: [] };
+        // Handle if dimensions is already an object (from mongoose lean) or string
+        const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+        return parsed || { attributes: [], dimensions: [] };
+    };
+
+    const initialDims = initialData ? parseDimensions(initialData.dimensions) : { attributes: [], dimensions: [] };
+
+    const [name, setName] = useState(initialData?.name || '');
+    const [description, setDescription] = useState(initialData?.description || '');
+    const [attributes, setAttributes] = useState(initialDims.attributes || []);
+    const [dimensions, setDimensions] = useState(initialDims.dimensions || []);
+    const [dependencies, setDependencies] = useState(initialData?.dependencies || []);
+    const [enrichments, setEnrichments] = useState(initialData?.enrichments || []);
 
     const handleAddAttribute = () => {
         setAttributes([...attributes, { name: '', unit: '' }]);
@@ -41,8 +50,8 @@ export const SchemaCreationForm = ({ onSubmit, onCancel }) => {
         setDimensions(dimensions.filter((_, i) => i !== index));
     };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
+    const handleSubmit = (e, status) => {
+        if (e) e.preventDefault();
         const schemaData = {
             name,
             description,
@@ -50,6 +59,7 @@ export const SchemaCreationForm = ({ onSubmit, onCancel }) => {
                 attributes,
                 dimensions,
             }),
+            status,
         };
         onSubmit(schemaData);
     };
@@ -65,11 +75,14 @@ export const SchemaCreationForm = ({ onSubmit, onCancel }) => {
                     >
                         <ChevronLeft className="w-5 h-5 text-gray-600" />
                     </button>
-                    <h1 className="text-xl font-semibold text-gray-900">Create Event Schema</h1>
+                    <h1 className="text-xl font-semibold text-gray-900">
+                        {initialData ? 'Edit Event Schema' : 'Create Event Schema'}
+                    </h1>
                 </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="max-w-6xl mx-auto px-8 py-8 space-y-6">
+            <form onSubmit={(e) => handleSubmit(e, 'active')} className="max-w-6xl mx-auto px-8 py-8 space-y-6">
+                {/* (Keep form content same) */}
                 {/* Define Event Schema Section */}
                 <div className="bg-white rounded-lg border border-gray-200 p-8">
                     <div className="grid grid-cols-12 gap-8">
@@ -350,16 +363,17 @@ export const SchemaCreationForm = ({ onSubmit, onCancel }) => {
                 <div className="flex justify-end gap-3 pt-4">
                     <button
                         type="button"
-                        onClick={onCancel}
+                        onClick={(e) => handleSubmit(e, 'draft')}
                         className="px-5 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
                     >
                         Save As Draft
                     </button>
                     <button
-                        type="submit"
+                        type="button"
+                        onClick={(e) => handleSubmit(e, initialData ? initialData.status : 'active')}
                         className="px-6 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 transition-colors"
                     >
-                        Publish
+                        {initialData ? 'Update Schema' : 'Publish'}
                     </button>
                 </div>
             </form>

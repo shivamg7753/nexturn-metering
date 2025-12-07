@@ -43,6 +43,20 @@ export const useSchemas = () => {
         }
     };
 
+    const updateSchema = async (id, schemaData, options = {}) => {
+        const loadingToast = toast.loading('Updating event schema...');
+        try {
+            await api.updateSchema({ id, ...schemaData });
+            await loadSchemas();
+            toast.success(options.successMessage || 'Event schema updated successfully!', { id: loadingToast });
+            return { success: true };
+        } catch (err) {
+            console.error('Failed to update schema', err);
+            toast.error('Failed to update event schema.', { id: loadingToast });
+            return { success: false, error: err };
+        }
+    };
+
     // Filter and sort schemas
     const filteredSchemas = schemas
         .filter(schema =>
@@ -51,7 +65,7 @@ export const useSchemas = () => {
         )
         .sort((a, b) => {
             if (sortBy === 'updated_desc') {
-                return new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at);
+                return new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt);
             }
             if (sortBy === 'name_asc') {
                 return a.name.localeCompare(b.name);
@@ -68,6 +82,7 @@ export const useSchemas = () => {
         setSortBy,
         filteredSchemas,
         createSchema,
+        updateSchema,
         refreshSchemas: loadSchemas,
     };
 };

@@ -33,13 +33,15 @@ export const calculateCustomerUsage = async (
     endDate: Date
 ): Promise<UsageResult[]> => {
     // 1. Get Customer's Active Subscriptions
-    const subscriptions = db.subscriptions.filter(s =>
-        s.customerId === customerId && s.status === 'active'
-    );
+    const subscriptions = await db.subscriptions.find({
+        customerId,
+        status: 'active'
+    });
 
     // 2. Get Plans for these subscriptions
     const planIds = subscriptions.map(s => s.planId);
-    const plans = db.plans.filter(p => planIds.includes(p.id));
+    // Use $in operator to find plans with IDs in the list
+    const plans = await db.plans.find({ id: { $in: planIds } });
 
     // 3. Extract relevant Meter IDs from Plan Charges
     const relevantMeterIds = new Set<string>();
@@ -55,23 +57,25 @@ export const calculateCustomerUsage = async (
     // 4. Fetch only relevant meters
     let meters: any[] = [];
     if (relevantMeterIds.size > 0) {
-        meters = db.meters.filter(m => relevantMeterIds.has(m.id));
+        meters = await db.meters.find({ id: { $in: Array.from(relevantMeterIds) } });
     }
 
     const usage: UsageResult[] = [];
 
     for (const meter of meters) {
         // Fetch events for this meter's schema and customer within range
-        const events = db.events.filter(e =>
-            e.eventSchemaId === meter.eventSchemaId &&
-            e.customerId === customerId &&
-            new Date(e.timestamp) >= startDate &&
-            new Date(e.timestamp) <= endDate
-        );
+        const events = await db.events.find({
+            eventSchemaId: meter.eventSchemaId,
+            customerId,
+            timestamp: {
+                $gte: startDate,
+                $lte: endDate
+            }
+        });
 
         // Parse properties
         const parsedEvents = events.map(e => ({
-            ...e,
+            ...e.toObject(),
             properties: parseProperties(e.properties),
         }));
 

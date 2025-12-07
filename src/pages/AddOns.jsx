@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, Search, Edit2 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import toast, { Toaster } from 'react-hot-toast';
 import { useApp } from '../context/store';
 import { api } from '../api/client';
 
@@ -11,31 +11,78 @@ export function AddOns() {
   const [sortBy, setSortBy] = useState('name_asc');
 
   // Form State
+  const [editingAddOn, setEditingAddOn] = useState(null);
   const [name, setName] = useState('');
   const [type, setType] = useState('fixed_fee');
   const [creditAmountCents, setCreditAmountCents] = useState(0);
 
+  const handleEdit = (addOn) => {
+    setEditingAddOn(addOn);
+    setName(addOn.name);
+    setType(addOn.type);
+    setCreditAmountCents(addOn.creditAmountCents || 0);
+    setIsCreating(true);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const loadingToast = toast.loading('Creating add-on...');
+    const loadingToast = toast.loading(editingAddOn ? 'Updating add-on...' : 'Creating add-on...');
     try {
-      const newAddOn = await api.createAddOn({
-        name,
-        type,
-        creditAmountCents: type === 'credit' ? creditAmountCents : undefined,
-      });
+      if (editingAddOn) {
+        const updatedAddOn = await api.updateAddOn({
+          id: editingAddOn.id,
+          name,
+          type,
+          creditAmountCents: type === 'credit' ? creditAmountCents : undefined,
+        });
 
-      dispatch({ type: 'ADD_ADDON', payload: newAddOn });
-      toast.success('Add-on created successfully!', { id: loadingToast });
+        dispatch({ type: 'UPDATE_ADDON', payload: updatedAddOn });
+        toast.success('Add-on updated successfully!', {
+          id: loadingToast,
+          position: 'top-right',
+          style: {
+            background: '#ecfdf5',
+            color: '#065f46',
+            border: '1px solid #a7f3d0'
+          },
+          iconTheme: {
+            primary: '#059669',
+            secondary: '#ecfdf5',
+          }
+        });
+      } else {
+        const newAddOn = await api.createAddOn({
+          name,
+          type,
+          creditAmountCents: type === 'credit' ? creditAmountCents : undefined,
+        });
+
+        dispatch({ type: 'ADD_ADDON', payload: newAddOn });
+        toast.success('Add-on created successfully!', {
+          id: loadingToast,
+          position: 'top-right',
+          style: {
+            background: '#ecfdf5',
+            color: '#065f46',
+            border: '1px solid #a7f3d0'
+          },
+          iconTheme: {
+            primary: '#059669',
+            secondary: '#ecfdf5',
+          }
+        });
+      }
+
       setIsCreating(false);
       resetForm();
     } catch (err) {
       console.error(err);
-      toast.error('Failed to create add-on', { id: loadingToast });
+      toast.error(editingAddOn ? 'Failed to update add-on' : 'Failed to create add-on', { id: loadingToast });
     }
   };
 
   function resetForm() {
+    setEditingAddOn(null);
     setName('');
     setType('fixed_fee');
     setCreditAmountCents(0);
@@ -61,12 +108,13 @@ export function AddOns() {
     .sort((a, b) => {
       if (sortBy === 'name_asc') return a.name.localeCompare(b.name);
       if (sortBy === 'name_desc') return b.name.localeCompare(a.name);
-      if (sortBy === 'created_desc') return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+      if (sortBy === 'created_desc') return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
       return 0;
     });
 
   return (
     <div className="space-y-6">
+      <Toaster />
       {/* Search and Actions Bar */}
       <div className="flex items-center justify-between gap-4">
         <div className="relative flex-1 max-w-md">
@@ -92,7 +140,7 @@ export function AddOns() {
           </select>
 
           <button
-            onClick={() => setIsCreating(true)}
+            onClick={() => { resetForm(); setIsCreating(true); }}
             className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
           >
             <Plus className="h-5 w-5 mr-2" />
@@ -108,7 +156,7 @@ export function AddOns() {
           <p className="text-sm text-gray-400 mt-1">Create your first add-on to get started</p>
           <div className="mt-6">
             <button
-              onClick={() => setIsCreating(true)}
+              onClick={() => { resetForm(); setIsCreating(true); }}
               className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
             >
               <Plus className="h-5 w-5 mr-2" />
@@ -149,11 +197,15 @@ export function AddOns() {
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-sm text-gray-600">{formatTimeAgo(addOn.created_at)}</span>
+                    <span className="text-sm text-gray-600">{formatTimeAgo(addOn.createdAt)}</span>
                   </td>
                   <td className="px-6 py-4">
-                    <button className="p-1.5 hover:bg-gray-100 rounded transition-colors">
-                      <Edit2 className="w-4 h-4 text-gray-600" />
+                    <button
+                      onClick={() => handleEdit(addOn)}
+                      className="p-1.5 hover:bg-gray-100 rounded transition-colors"
+                      title="Edit Add-On"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-pen w-4 h-4 text-gray-600" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path></svg>
                     </button>
                   </td>
                 </tr>
@@ -167,7 +219,7 @@ export function AddOns() {
       {isCreating && (
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h2 className="text-xl font-bold mb-4">New Add-On</h2>
+            <h2 className="text-xl font-bold mb-4">{editingAddOn ? 'Edit Add-On' : 'New Add-On'}</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">Add-On Name</label>
@@ -209,7 +261,7 @@ export function AddOns() {
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   type="button"
-                  onClick={() => setIsCreating(false)}
+                  onClick={() => { setIsCreating(false); resetForm(); }}
                   className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
                 >
                   Cancel
@@ -218,7 +270,7 @@ export function AddOns() {
                   type="submit"
                   className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
                 >
-                  Create Add-On
+                  {editingAddOn ? 'Update Add-On' : 'Create Add-On'}
                 </button>
               </div>
             </form>
