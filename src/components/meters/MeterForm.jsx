@@ -195,7 +195,7 @@ export const MeterForm = ({
                             </select>
                         </div>
 
-                        {aggregation !== 'count' && (
+                        {/* {aggregation !== 'count' && (
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Target Field</label>
                                 <select
@@ -210,7 +210,7 @@ export const MeterForm = ({
                                     ))}
                                 </select>
                             </div>
-                        )}
+                        )} */}
                     </div>
                 </div>
 

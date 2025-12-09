@@ -2,21 +2,18 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
     LayoutDashboard, Users, CreditCard, BarChart3, FileText,
-    Settings, Zap, Wallet, Tag, Receipt, Code, Gauge
+    Settings, Zap, Wallet, Tag, Receipt, Code, Gauge, Package
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Customers', href: '/customers', icon: Users },
+    { name: 'Products', href: '/products', icon: Package },
     { name: 'Plans', href: '/plans', icon: CreditCard },
-    { name: 'Billable Metrics', href: '/billable-metrics', icon: BarChart3 },
     { name: 'Invoices', href: '/invoices', icon: FileText },
-    { name: 'Credit Notes', href: '/credit-notes', icon: Receipt },
     { name: 'Events', href: '/events', icon: Zap },
     { name: 'Billable Items', href: '/billable-items', icon: Gauge },
-    { name: 'Coupons', href: '/coupons', icon: Tag },
-    { name: 'Wallets', href: '/wallets', icon: Wallet },
     { name: 'Settings', href: '/settings', icon: Settings },
 ];
 

@@ -12,6 +12,7 @@ import { BillableMetrics } from './pages/BillableMetrics';
 import { Plans } from './pages/Plans';
 import { Customers } from './pages/Customers';
 import { CustomerDetail } from './pages/CustomerDetail';
+import { AccountDetail } from './pages/AccountDetail';
 import { Settings } from './pages/Settings';
 import { Schemas } from './pages/Schemas';
 import { Meters } from './pages/Meters';
@@ -19,6 +20,7 @@ import { BillableItems } from './pages/BillableItems';
 import { PlanFormPage } from './pages/PlanFormPage';
 import { PlanDetailPage } from './pages/PlanDetailPage';
 import { Events } from './pages/Events';
+import { Products } from './pages/Products';
 
 
 const DashboardLoader = () => {
@@ -119,6 +121,7 @@ const DashboardLoader = () => {
                     <Route index element={<Dashboard />} />
                     <Route path="customers" element={<Customers />} />
                     <Route path="customers/:id" element={<CustomerDetail />} />
+                    <Route path="accounts/:accountId" element={<AccountDetail />} />
                     <Route path="plans" element={<Plans />} />
                     <Route path="plans/:id" element={<PlanDetailPage />} />
                     <Route path="plans/new" element={<PlanFormPage />} />
@@ -132,6 +135,7 @@ const DashboardLoader = () => {
                     <Route path="schemas" element={<Schemas />} />
                     <Route path="meters" element={<Meters />} />
                     <Route path="billable-items" element={<BillableItems />} />
+                    <Route path="products" element={<Products />} />
                     <Route path="settings" element={<Settings />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Route>
