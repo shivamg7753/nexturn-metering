@@ -6,7 +6,8 @@ import {
   PlanModel,
   SubscriptionModel,
   AddOnModel,
-  FeatureModel
+  FeatureModel,
+  ProductModel
 } from './models';
 
 // --- Interfaces (Kept for backward compatibility with existing code) ---
@@ -103,6 +104,15 @@ export interface Feature {
   createdAt: string;
 }
 
+export interface Product {
+  id: string;
+  name: string;
+  code: string;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Export a db object that maps to the Mongoose Models
 // This allows imports to remain { db } from './db' but methods will change
 export const db = {
@@ -114,4 +124,6 @@ export const db = {
   subscriptions: SubscriptionModel,
   addOns: AddOnModel,
   features: FeatureModel,
+  products: ProductModel,
 };
+

@@ -11,6 +11,7 @@ import { SubscriptionManager } from '../features/subscriptions/SubscriptionManag
 export const SubscriptionsSection = ({
     subscriptions,
     plans,
+    products,
     customerId,
     isFormOpen,
     onOpenForm,
@@ -46,10 +47,14 @@ export const SubscriptionsSection = ({
                 <div className="space-y-4">
                     {subscriptions.map(sub => {
                         const plan = plans.find(p => p.id === sub.planId);
+                        const product = products?.find(prod => prod.id === plan?.productId);
                         return (
                             <div key={sub.id} className="flex items-center justify-between p-4 border border-gray-100 rounded-lg">
                                 <div>
-                                    <h3 className="font-medium text-gray-900">{plan?.name || 'Unknown Plan'}</h3>
+                                    <h3 className="font-medium text-gray-900">
+                                        {product ? <span className="text-indigo-600 mr-2">[{product.name}]</span> : null}
+                                        {plan?.name || 'Unknown Plan'}
+                                    </h3>
                                     <p className="text-sm text-gray-500">
                                         {formatCurrency(plan?.amountCents || 0, plan?.currency || 'USD')} / {plan?.interval}
                                     </p>

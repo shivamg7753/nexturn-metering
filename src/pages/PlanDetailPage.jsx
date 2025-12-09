@@ -2,7 +2,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/store';
 
-import { ArrowLeft, DollarSign, Activity, Gift, Users, Shield, Copy } from 'lucide-react';
+import { ArrowLeft, DollarSign, Activity, Gift, Users, Shield, Copy, Package } from 'lucide-react';
 import { api } from '../api/client';
 import { generateId } from '../lib/utils';
 
@@ -11,11 +11,30 @@ export const PlanDetailPage = () => {
   const navigate = useNavigate();
   const { state, dispatch } = useApp();
   const [plan, setPlan] = useState(undefined);
+  const [products, setProducts] = useState([]);
+  const [selectedProductId, setSelectedProductId] = useState('');
+
+  useEffect(() => {
+    // Fetch products
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/api/products');
+        const data = await response.json();
+        setProducts(data);
+      } catch (error) {
+        console.error('Failed to fetch products:', error);
+      }
+    };
+    fetchProducts();
+  }, []);
 
   useEffect(() => {
     if (id) {
       const foundPlan = state.plans.find(p => p.id === id);
       setPlan(foundPlan);
+      if (foundPlan?.productId) {
+        setSelectedProductId(foundPlan.productId);
+      }
     }
   }, [id, state.plans]);
 
@@ -30,13 +49,23 @@ export const PlanDetailPage = () => {
   const handleToggleStatus = async () => {
     const newStatus = plan.status === 'active' ? 'inactive' : 'active';
     const updatedPlan = { ...plan, status: newStatus };
+    updatePlan(updatedPlan);
+  };
 
+  const handleProductChange = async (e) => {
+    const newProductId = e.target.value;
+    setSelectedProductId(newProductId);
+    const updatedPlan = { ...plan, productId: newProductId };
+    updatePlan(updatedPlan);
+  };
+
+  const updatePlan = async (updatedPlan) => {
     try {
       await api.updatePlan(updatedPlan);
       dispatch({ type: 'UPDATE_PLAN', payload: updatedPlan });
       setPlan(updatedPlan);
     } catch (error) {
-      console.error('Failed to update plan status:', error);
+      console.error('Failed to update plan:', error);
     }
   };
 
@@ -151,41 +180,59 @@ export const PlanDetailPage = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-4">
-                <div className="flex flex-col items-end">
-                  <span className="text-xs text-gray-500 uppercase mb-1">Toggle Status</span>
-                  <button
-                    onClick={handleToggleStatus}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${plan.status === 'active' ? 'bg-indigo-600' : 'bg-gray-200'}`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${plan.status === 'active' ? 'translate-x-6' : 'translate-x-1'}`}
-                    />
-                  </button>
-                </div>
 
+              <div className="flex flex-col items-end">
+                <span className="text-xs text-gray-500 uppercase mb-1">Toggle Status</span>
                 <button
-                  onClick={() => navigate(`/plans/edit/${plan.id}`)}
-                  disabled={plan.status === 'active'}
-                  className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg ${plan.status === 'active'
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
-                    : 'bg-indigo-600 text-white hover:bg-indigo-700'
-                    }`}
-                  title={plan.status === 'active' ? 'Deactivate plan to edit' : ''}
+                  onClick={handleToggleStatus}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${plan.status === 'active' ? 'bg-indigo-600' : 'bg-gray-200'}`}
                 >
-                  Edit Plan
-                </button>
-
-                <button
-                  onClick={handleClone}
-                  className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50"
-                >
-                  <Copy className="w-4 h-4 mr-2" />
-                  Clone Price Plan
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${plan.status === 'active' ? 'translate-x-6' : 'translate-x-1'}`}
+                  />
                 </button>
               </div>
             </div>
+
+            <div className="flex items-center gap-2 mt-4">
+              <button
+                onClick={() => navigate(`/plans/edit/${plan.id}`)}
+                disabled={plan.status === 'active'}
+                className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg ${plan.status === 'active'
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
+                  : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                  }`}
+                title={plan.status === 'active' ? 'Deactivate plan to edit' : ''}
+              >
+                Edit Plan
+              </button>
+
+              <button
+                onClick={handleClone}
+                className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50"
+              >
+                <Copy className="w-4 h-4 mr-2" />
+                Clone Price Plan
+              </button>
+
+              <div className="relative inline-block">
+                <select
+                  value={selectedProductId}
+                  onChange={handleProductChange}
+                  className="appearance-none pl-10 pr-8 py-2 bg-indigo-50 border border-indigo-200 text-indigo-700 text-sm font-bold rounded-lg hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
+                >
+                  <option value="">Link Product...</option>
+                  {products.map(product => (
+                    <option key={product.id} value={product.id}>
+                      {product.name}
+                    </option>
+                  ))}
+                </select>
+                <Package className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+              </div>
+            </div>
           </div>
+
 
           {/* Rate Cards Table */}
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -247,6 +294,8 @@ export const PlanDetailPage = () => {
         <div className="lg:col-span-1 space-y-6">
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="space-y-6">
+
+
               <div>
                 <label className="text-xs font-medium text-gray-500 uppercase block mb-1">
                   Price Plan ID
@@ -264,6 +313,28 @@ export const PlanDetailPage = () => {
                   </button>
                 </div>
               </div>
+
+              {selectedProductId && (() => {
+                const selectedProduct = products.find(p => p.id === selectedProductId);
+                if (selectedProduct) {
+                  return (
+                    <div>
+                      <label className="text-xs font-bold text-gray-900 uppercase block mb-1">
+                        Linked Product
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-900">
+                          {selectedProduct.name}
+                        </span>
+                        <span className="text-xs text-gray-500 font-mono bg-gray-50 px-1.5 py-0.5 rounded">
+                          {selectedProduct.id}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
 
               <div>
                 <label className="text-xs font-medium text-gray-500 uppercase block mb-1">
@@ -321,8 +392,8 @@ export const PlanDetailPage = () => {
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 };
 

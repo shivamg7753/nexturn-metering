@@ -66,6 +66,7 @@ const planSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true, default: () => crypto.randomUUID() },
   name: { type: String, required: true },
   description: { type: String },
+  productId: { type: String },
   type: { type: String, required: true },
   interval: { type: String, required: true },
   intervalCount: { type: Number, required: true },
@@ -120,3 +121,16 @@ const featureSchema = new mongoose.Schema({
 });
 
 export const FeatureModel = mongoose.model('Feature', featureSchema);
+
+// --- Product ---
+const productSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true, default: () => `prod_${Date.now()}` },
+  name: { type: String, required: true },
+  code: { type: String, required: true, unique: true },
+  description: { type: String },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+export const ProductModel = mongoose.model('Product', productSchema);
+

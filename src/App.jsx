@@ -21,6 +21,7 @@ import { PlanFormPage } from './pages/PlanFormPage';
 import { PlanDetailPage } from './pages/PlanDetailPage';
 import { Events } from './pages/Events';
 import { Products } from './pages/Products';
+import { ProductDetail } from './pages/ProductDetail';
 
 
 const DashboardLoader = () => {
@@ -89,6 +90,23 @@ const DashboardLoader = () => {
                 realAddOns.forEach((a) => dispatch({ type: 'ADD_ADDON', payload: a }));
             } catch (e) {
                 console.error("Failed to fetch add-ons", e);
+                console.error("Failed to fetch add-ons", e);
+            }
+
+            // Fetch Real Features from Backend
+            try {
+                const realFeatures = await api.getFeatures();
+                dispatch({ type: 'SET_FEATURES', payload: realFeatures });
+            } catch (e) {
+                console.error("Failed to fetch features", e);
+            }
+
+            // Fetch Real Products from Backend
+            try {
+                const realProducts = await api.getProducts();
+                dispatch({ type: 'SET_PRODUCTS', payload: realProducts });
+            } catch (e) {
+                console.error("Failed to fetch products", e);
             }
 
             // plans.forEach(p => dispatch({ type: 'ADD_PLAN', payload: p })); // Removed seed plans
@@ -136,6 +154,7 @@ const DashboardLoader = () => {
                     <Route path="meters" element={<Meters />} />
                     <Route path="billable-items" element={<BillableItems />} />
                     <Route path="products" element={<Products />} />
+                    <Route path="products/:id" element={<ProductDetail />} />
                     <Route path="settings" element={<Settings />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Route>

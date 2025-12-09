@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import { useApp } from '../context/store';
 import { api } from '../api/client';
@@ -15,6 +15,23 @@ import {
 export function Features() {
   const { state, dispatch } = useApp();
   const { schemas } = useFeatures();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFeatures = async () => {
+      try {
+        const data = await api.getFeatures();
+        dispatch({ type: 'SET_FEATURES', payload: data });
+      } catch (error) {
+        console.error('Failed to fetch features:', error);
+        toast.error('Failed to load features');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFeatures();
+  }, [dispatch]);
 
   // View State
   const [viewMode, setViewMode] = useState('grid');

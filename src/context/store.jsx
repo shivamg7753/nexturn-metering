@@ -20,7 +20,8 @@ const initialState = {
     coupons: [],
     creditNotes: [],
     addOns: [],
-    features: []
+    features: [],
+    products: []
 };
 
 const appReducer = (state, action) => {
@@ -51,6 +52,12 @@ const appReducer = (state, action) => {
             return { ...state, features: [...state.features, action.payload] };
         case 'UPDATE_FEATURE':
             return { ...state, features: state.features.map(f => f.id === action.payload.id ? action.payload : f) };
+        case 'SET_FEATURES':
+            return { ...state, features: action.payload };
+        case 'ADD_PRODUCT':
+            return { ...state, products: [...(state.products || []), action.payload] };
+        case 'SET_PRODUCTS':
+            return { ...state, products: action.payload };
         case 'ADD_SUBSCRIPTION':
             return { ...state, subscriptions: [...state.subscriptions, action.payload] };
         case 'UPDATE_SUBSCRIPTION':

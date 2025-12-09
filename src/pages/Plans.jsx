@@ -47,6 +47,18 @@ export const Plans = () => {
   const handleDelete = async (plan, e) => {
     e.stopPropagation();
 
+    // Check if plan is associated with a product
+    if (plan.productId) {
+      const product = state.products?.find(p => p.id === plan.productId);
+      const productName = product?.name || 'a product';
+
+      toast.error(
+        `Cannot delete this plan. It is associated with ${productName}. Please remove the product association first.`,
+        { duration: 5000 }
+      );
+      return;
+    }
+
     if (window.confirm(`Are you sure you want to delete the plan "${plan.name}"?`)) {
       try {
         await api.deletePlan(plan.id);

@@ -57,6 +57,7 @@ export const CustomerDetail = () => {
             subscriptions={customerSubscriptions}
             plans={state.plans}
             customerId={customer.id}
+            products={state.products}
             isFormOpen={isSubFormOpen}
             onOpenForm={() => setIsSubFormOpen(true)}
             onCloseForm={() => setIsSubFormOpen(false)}

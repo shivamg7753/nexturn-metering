@@ -33,15 +33,25 @@ export const getAllCustomers = async (req: Request, res: Response) => {
  */
 export const createCustomer = async (req: Request, res: Response) => {
     try {
-        const { id, name, email, externalId, billingAddress, metadata } = req.body;
-        // Use default ID from schema if not provided, but allow override
+        const { id, name, email, externalId, billingAddress, currency, customerId, accountId, aliases, metadata } = req.body;
+
+        // Merge extra UI fields into metadata
+        const meta = {
+            ...(metadata || {}),
+            accountId,
+            aliases,
+            // If the UI sends 'customerId' but backend expects 'externalId', 
+            // we can fallback or explicitly map. The UI sends 'customerId' as the user-facing ID.
+            // We'll map UI 'customerId' to backend 'externalId' if 'externalId' is missing.
+        };
+
         const customerData: any = {
             name,
             email,
-            externalId,
+            externalId: externalId || customerId, // Map UI customerId to externalId
             billingAddress: JSON.stringify(billingAddress || {}),
-            metadata: JSON.stringify(metadata || {}),
-            currency: 'USD',
+            metadata: JSON.stringify(meta),
+            currency: currency || 'USD',
             customerType: 'individual'
         };
         if (id) customerData.id = id;

@@ -140,9 +140,24 @@ export const api = {
     return res.json();
   },
 
+
+  // Products
+  getProducts: async () => {
+    const res = await fetch(`${API_URL}/products`);
+    return res.json();
+  },
+
   // Customers
   getCustomers: async () => {
     const res = await fetch(`${API_URL}/customers`);
+    return res.json();
+  },
+  createCustomer: async (data) => {
+    const res = await fetch(`${API_URL}/customers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
     return res.json();
   },
 

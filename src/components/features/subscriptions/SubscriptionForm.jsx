@@ -9,6 +9,7 @@ import { X } from 'lucide-react';
 
 export const SubscriptionForm = ({ onClose, customerId }) => {
   const { state, dispatch } = useApp();
+  const [selectedProductId, setSelectedProductId] = useState('');
   const [selectedPlanId, setSelectedPlanId] = useState('');
   const [selectedCustomerId, setSelectedCustomerId] = useState(customerId || '');
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
@@ -112,17 +113,38 @@ export const SubscriptionForm = ({ onClose, customerId }) => {
           )}
 
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Product</label>
+            <select
+              required
+              value={selectedProductId}
+              onChange={e => {
+                setSelectedProductId(e.target.value);
+                setSelectedPlanId(''); // Reset plan when product changes
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+            >
+              <option value="">Select a product</option>
+              {state.products?.map(prod => (
+                <option key={prod.id} value={prod.id}>{prod.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Plan</label>
             <select
               required
               value={selectedPlanId}
               onChange={e => setSelectedPlanId(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+              disabled={!selectedProductId}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:text-gray-400"
             >
               <option value="">Select a plan</option>
-              {state.plans.map(p => (
-                <option key={p.id} value={p.id}>{p.name} ({p.code})</option>
-              ))}
+              {state.plans
+                .filter(p => !selectedProductId || p.productId === selectedProductId)
+                .map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
             </select>
           </div>
 

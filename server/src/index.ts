@@ -288,6 +288,7 @@ app.post('/api/plans', async (req, res) => {
       charges: JSON.stringify(charges || []),
       payInAdvance,
       trialPeriod,
+      productId: req.body.productId,
       status: req.body.status || 'draft'
     };
     if (id) planData.id = id;
@@ -303,7 +304,7 @@ app.post('/api/plans', async (req, res) => {
 app.put('/api/plans/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, interval, type, intervalCount, amountCents, currency, charges, payInAdvance, trialPeriod } = req.body;
+    const { name, description, interval, type, intervalCount, amountCents, currency, charges, payInAdvance, trialPeriod, productId } = req.body;
     const plan = await db.plans.findOneAndUpdate(
       { id },
       {
@@ -317,6 +318,7 @@ app.put('/api/plans/:id', async (req, res) => {
         charges: JSON.stringify(charges || []),
         payInAdvance,
         trialPeriod,
+        productId,
         status: req.body.status,
         updatedAt: new Date(),
       },
@@ -345,10 +347,42 @@ app.get('/api/subscriptions', async (req, res) => {
 app.post('/api/subscriptions', async (req, res) => {
   try {
     const { customerId, planId, status, startDate, endDate, billingTime, overriddenPlan } = req.body;
+
+    const initialStatus = status || 'active';
+
+    // Validate Plan exists
+    const newPlan = await db.plans.findOne({ id: planId });
+    if (!newPlan) {
+      return res.status(404).json({ error: 'Plan not found' });
+    }
+
+    try {
+      const fs = require('fs');
+      fs.appendFileSync('debug.log', `[${new Date().toISOString()}] CHECK: customer=${customerId} plan=${planId} productId='${newPlan.productId}' status=${initialStatus}\n`);
+    } catch (e) { }
+
+    // Enforce One Active Plan Per Product
+    if (initialStatus === 'active' && newPlan.productId) {
+      const activeSubscriptions = await db.subscriptions.find({
+        customerId,
+        status: 'active'
+      });
+
+      for (const sub of activeSubscriptions) {
+        const existingPlan = await db.plans.findOne({ id: sub.planId });
+        // If existing plan belongs to the same product, reject
+        if (existingPlan && existingPlan.productId === newPlan.productId) {
+          return res.status(400).json({
+            error: `Customer already has an active subscription for this product (${existingPlan.productId}). Only one active plan allowed per product.`
+          });
+        }
+      }
+    }
+
     const subscription = await db.subscriptions.create({
       customerId,
       planId,
-      status: status || 'active',
+      status: initialStatus,
       startDate: startDate || new Date(),
       endDate,
       billingTime: billingTime || 'calendar',
@@ -362,9 +396,28 @@ app.post('/api/subscriptions', async (req, res) => {
   }
 });
 
-// 6. Usage (MOVED TO MODULAR ROUTES - see routes/usage.routes.ts)
-// app.get('/api/usage/:customerId', ...) - Now in usage.controller.ts + usage.service.ts
-// Business logic extracted to services/usage.service.ts
+// Update subscription (e.g., cancel)
+app.patch('/api/subscriptions/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const subscription = await db.subscriptions.findOneAndUpdate(
+      { id },
+      { status, updatedAt: new Date() },
+      { new: true }
+    );
+
+    if (!subscription) {
+      return res.status(404).json({ error: 'Subscription not found' });
+    }
+
+    res.json(subscription);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to update subscription' });
+  }
+});
 
 // 7. Events List (Recent Activity)
 app.get('/api/events/:customerId', async (req, res) => {
