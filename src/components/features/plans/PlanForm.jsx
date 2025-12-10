@@ -1110,12 +1110,21 @@ const UsageFeeModal = ({ onClose, onSave, metrics, initialData }) => {
 
   const addTier = () => {
     const lastTier = tiers[tiers.length - 1];
-    setTiers([...tiers, { firstUnit: (lastTier.lastUnit || 0) + 1, lastUnit: null, unitAmountCents: 0, type: 'flat' }]);
+    setTiers([...tiers, { firstUnit: Number(lastTier.lastUnit || 0) + 1, lastUnit: null, unitAmountCents: 0, type: 'flat' }]);
   };
 
   const updateTier = (index, field, value) => {
     const newTiers = [...tiers];
     newTiers[index] = { ...newTiers[index], [field]: value };
+
+    // If lastUnit changed and there is a next tier, update its firstUnit
+    if (field === 'lastUnit' && index < newTiers.length - 1) {
+      newTiers[index + 1] = {
+        ...newTiers[index + 1],
+        firstUnit: value === null ? null : (Number(value) + 1)
+      };
+    }
+
     setTiers(newTiers);
   };
 
@@ -1419,12 +1428,21 @@ const LicenseFeeModal = ({ onClose, onSave, addOns, initialData }) => {
 
   const addTier = () => {
     const lastTier = tiers[tiers.length - 1];
-    setTiers([...tiers, { firstUnit: (lastTier.lastUnit || 0) + 1, lastUnit: null, unitAmountCents: 0, type: 'per_unit' }]);
+    setTiers([...tiers, { firstUnit: Number(lastTier.lastUnit || 0) + 1, lastUnit: null, unitAmountCents: 0, type: 'per_unit' }]);
   };
 
   const updateTier = (index, field, value) => {
     const newTiers = [...tiers];
     newTiers[index] = { ...newTiers[index], [field]: value };
+
+    // If lastUnit changed and there is a next tier, update its firstUnit
+    if (field === 'lastUnit' && index < newTiers.length - 1) {
+      newTiers[index + 1] = {
+        ...newTiers[index + 1],
+        firstUnit: value === null ? null : (Number(value) + 1)
+      };
+    }
+
     setTiers(newTiers);
   };
 
