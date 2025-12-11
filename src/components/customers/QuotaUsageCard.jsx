@@ -49,112 +49,152 @@ export const QuotaUsageCard = ({ accountId, accountName }) => {
           console.log('Charges (parsed):', charges);
 
           for (const charge of charges) {
-            console.log('Charge:', charge);
+            console.log('=== Checking Charge ===');
+            console.log('Charge name:', charge.name);
             console.log('Charge type:', charge.type);
+            console.log('Full charge object:', charge);
 
-            // Check for quota in various possible locations
-            const quotaValue = charge.entitlementLimit || charge.properties?.quota || charge.quota || charge.properties?.maxUnits;
+            // Check for quota in ALL possible locations
+            const quotaValue =
+              charge.entitlementLimit ||           // Entitlement charges
+              charge.properties?.quota ||          // Usage-based charges
+              charge.quota ||                      // Direct quota field
+              charge.properties?.maxUnits ||       // Max units
+              charge.properties?.maxLicenseQuantity || // License limits
+              charge.properties?.creditsToBeIssued;    // Credit-based
+
+            console.log('Quota value found:', quotaValue);
 
             if (quotaValue !== undefined && quotaValue !== null && quotaValue !== '' && quotaValue !== 0) {
               console.log('✅ Found quota:', quotaValue, 'for charge:', charge.name);
 
               let meterOrFeatureName = charge.name;
               let fieldName = null;
-
-              // For entitlement charges, use feature name
-              if (charge.type === 'entitlement' && charge.featureId) {
-                const feature = await fetch(`http://localhost:3000/api/features`).then(r => r.json());
-                const foundFeature = feature.find(f => f.id === charge.featureId);
-                if (foundFeature) {
-                  meterOrFeatureName = foundFeature.name;
-                  fieldName = charge.properties?.featureName || foundFeature.code;
-                }
-              }
-
-              // For metered charges, find the meter
-              let meter = null;
-              if (charge.billableMetricId) {
-                meter = meters.find(m => m.id === charge.billableMetricId);
-                if (meter) {
-                  meterOrFeatureName = meter.name;
-                  fieldName = meter.field;
-                }
-              }
-
-              console.log('Meter/Feature:', meterOrFeatureName, 'Field:', fieldName);
-
-              // Calculate current usage - for entitlements, count all matching events
               let currentUsage = 0;
 
-              if (charge.type === 'entitlement') {
-                // For entitlements, we need to find events that match this feature
-                // This is a simplified approach - you may need to adjust based on how you track feature usage
-                const featureName = charge.properties?.featureName || charge.name;
+              // Determine how to calculate usage based on charge type
+              if (charge.type === 'entitlement' && charge.featureId) {
+                // ENTITLEMENT: Fetch feature details
+                console.log('Processing ENTITLEMENT charge');
+                try {
+                  const featuresRes = await fetch(`http://localhost:3000/api/features`);
+                  const features = await featuresRes.json();
+                  const foundFeature = features.find(f => f.id === charge.featureId);
+                  if (foundFeature) {
+                    meterOrFeatureName = foundFeature.name;
+                    fieldName = charge.properties?.featureName || foundFeature.code || charge.name;
+                  }
+                } catch (e) {
+                  console.error('Error fetching features:', e);
+                  fieldName = charge.properties?.featureName || charge.name;
+                }
 
-                // Count events that have this feature in their properties
+                // Calculate entitlement usage from events
+                const searchField = fieldName || charge.name;
                 const matchingEvents = events.filter(e => {
                   try {
                     const props = typeof e.properties === 'string' ? JSON.parse(e.properties) : e.properties;
-                    // Check if any property value matches the feature name or if there's a specific field
-                    return props[featureName] !== undefined || props[fieldName] !== undefined;
+                    return props[searchField] !== undefined;
                   } catch {
                     return false;
                   }
                 });
 
-                // Sum up the usage
                 currentUsage = matchingEvents.reduce((sum, e) => {
                   try {
                     const props = typeof e.properties === 'string' ? JSON.parse(e.properties) : e.properties;
-                    const value = props[featureName] || props[fieldName] || props[charge.name] || 0;
+                    return sum + (Number(props[searchField]) || 0);
+                  } catch {
+                    return sum;
+                  }
+                }, 0);
+
+                console.log('Entitlement usage:', currentUsage, 'from', matchingEvents.length, 'events');
+
+              } else if (charge.type === 'usage' && charge.billableMetricId) {
+                // USAGE-BASED: Use meter to calculate usage
+                console.log('Processing USAGE charge');
+                const meter = meters.find(m => m.id === charge.billableMetricId);
+                if (meter) {
+                  meterOrFeatureName = meter.name;
+                  fieldName = meter.field;
+
+                  const meterEvents = events.filter(e => e.eventSchemaId === meter.eventSchemaId);
+                  let parsedEvents = meterEvents.map(e => ({
+                    ...e,
+                    properties: typeof e.properties === 'string' ? JSON.parse(e.properties) : e.properties
+                  }));
+
+                  // Apply meter filters
+                  if (meter.filter) {
+                    try {
+                      const rawFilter = typeof meter.filter === 'string' ? JSON.parse(meter.filter) : meter.filter;
+                      const filters = Array.isArray(rawFilter) ? rawFilter : [rawFilter];
+                      parsedEvents = parsedEvents.filter(event => {
+                        return filters.every(filter => {
+                          const val = event.properties[filter.key];
+                          return String(val) === String(filter.value);
+                        });
+                      });
+                    } catch (e) {
+                      console.error('Error parsing filters:', e);
+                    }
+                  }
+
+                  if (meter.aggregation === 'count') {
+                    currentUsage = parsedEvents.length;
+                  } else if (meter.aggregation === 'sum' && meter.field) {
+                    currentUsage = parsedEvents.reduce((sum, event) => {
+                      return sum + (Number(event.properties[meter.field]) || 0);
+                    }, 0);
+                  }
+
+                  console.log('Usage-based usage:', currentUsage);
+                } else {
+                  console.log('Meter not found for billableMetricId:', charge.billableMetricId);
+                }
+
+              } else if (charge.type === 'license') {
+                // LICENSE: Count would typically be managed differently, 
+                // For now, just show the limit without calculating usage
+                console.log('Processing LICENSE charge - showing limit only');
+                currentUsage = 0; // License usage needs different tracking
+                meterOrFeatureName = charge.name;
+                fieldName = 'licenses';
+
+              } else {
+                // GENERIC: Try to find usage from events with matching charge name
+                console.log('Processing GENERIC charge type:', charge.type);
+                fieldName = charge.name.toLowerCase().replace(/\s+/g, '_');
+                const matchingEvents = events.filter(e => {
+                  try {
+                    const props = typeof e.properties === 'string' ? JSON.parse(e.properties) : e.properties;
+                    return props[charge.name] !== undefined || props[fieldName] !== undefined;
+                  } catch {
+                    return false;
+                  }
+                });
+
+                currentUsage = matchingEvents.reduce((sum, e) => {
+                  try {
+                    const props = typeof e.properties === 'string' ? JSON.parse(e.properties) : e.properties;
+                    const value = props[charge.name] || props[fieldName] || 0;
                     return sum + (Number(value) || 0);
                   } catch {
                     return sum;
                   }
                 }, 0);
 
-                console.log('Entitlement usage calculated:', currentUsage, 'from', matchingEvents.length, 'events');
-              } else if (meter) {
-
-                // Calculate current usage
-                const meterEvents = events.filter(e => e.eventSchemaId === meter.eventSchemaId);
-
-                let parsedEvents = meterEvents.map(e => ({
-                  ...e,
-                  properties: typeof e.properties === 'string' ? JSON.parse(e.properties) : e.properties
-                }));
-
-                //Apply filters if any
-                if (meter.filter) {
-                  try {
-                    const rawFilter = typeof meter.filter === 'string' ? JSON.parse(meter.filter) : meter.filter;
-                    const filters = Array.isArray(rawFilter) ? rawFilter : [rawFilter];
-                    parsedEvents = parsedEvents.filter(event => {
-                      return filters.every(filter => {
-                        const val = event.properties[filter.key];
-                        return String(val) === String(filter.value);
-                      });
-                    });
-                  } catch (e) {
-                    // Ignore filter errors
-                  }
-                }
-
-                if (meter.aggregation === 'count') {
-                  currentUsage = parsedEvents.length;
-                } else if (meter.aggregation === 'sum' && meter.field) {
-                  currentUsage = parsedEvents.reduce((sum, event) => {
-                    return sum + (Number(event.properties[meter.field]) || 0);
-                  }, 0);
-                }
+                console.log('Generic usage:', currentUsage, 'from', matchingEvents.length, 'events');
               }
 
               const quota = Number(quotaValue);
               const remaining = Math.max(0, quota - currentUsage);
-              const usagePercent = (currentUsage / quota) * 100;
+              const usagePercent = quota > 0 ? (currentUsage / quota) * 100 : 0;
 
               quotas.push({
                 meterName: meterOrFeatureName,
+                chargeType: charge.type,
                 field: fieldName,
                 currentUsage,
                 quota,
@@ -163,7 +203,16 @@ export const QuotaUsageCard = ({ accountId, accountName }) => {
                 status: usagePercent >= 100 ? 'exceeded' : usagePercent >= 80 ? 'warning' : 'ok'
               });
 
-              console.log('Added quota:', { meterName: meterOrFeatureName, currentUsage, quota, remaining });
+              console.log('✅ Added quota:', {
+                name: meterOrFeatureName,
+                type: charge.type,
+                currentUsage,
+                quota,
+                remaining,
+                percent: usagePercent.toFixed(1) + '%'
+              });
+            } else {
+              console.log('⚠️ No quota found for charge:', charge.name);
             }
           }
         }

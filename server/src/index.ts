@@ -283,101 +283,155 @@ app.get('/api/simulate/quota-check', async (req, res) => {
 
     // Check quota for each account
     for (const accountId of targetAccountIds) {
+      console.log('=== Checking account:', accountId);
+
       // Get active subscriptions for this account
       const subscriptions = await db.subscriptions.find({
         customerId: accountId,
         status: 'active'
       });
 
+      console.log('Found subscriptions:', subscriptions.length);
+      console.log('Subscriptions:', subscriptions);
+
       if (subscriptions.length === 0) {
+        console.log('No subscriptions found for account:', accountId);
         continue; // Skip accounts with no subscriptions
       }
 
       // Get plans for these subscriptions
       const planIds = subscriptions.map(sub => sub.planId);
+      console.log('Looking for plans with IDs:', planIds);
+
       const plans = await db.plans.find({ id: { $in: planIds } });
+      console.log('Found plans:', plans.length);
+      if (plans.length > 0) {
+        console.log('Plan details:', plans.map((p: any) => ({ id: p.id, name: p.name, hasCharges: !!p.charges })));
+      }
 
-      // Check each meter
-      for (const meter of meters) {
-        // Find charges for this meter in the plans
-        for (const plan of plans) {
-          const charges = JSON.parse(plan.charges as string || '[]');
-          const charge = charges.find((c: any) => c.billableMetricId === meter.id);
+      // Check ALL charges in plans for quotas (not just meter-based)
+      for (const plan of plans) {
+        const charges = JSON.parse(plan.charges as string || '[]');
+        console.log('Plan', plan.name, 'has', charges.length, 'charges');
 
-          if (charge && charge.properties?.quota !== undefined && charge.properties?.quota !== null) {
-            const quotaLimit = Number(charge.properties.quota);
+        for (const charge of charges) {
+          console.log('Checking charge:', charge.name, 'type:', charge.type);
 
-            // Calculate current usage for this meter and account by aggregating events
-            let currentUsage = 0;
+          // Check for quota in all possible locations (like QuotaUsageCard does)
+          const quotaValue =
+            charge.entitlementLimit ||           // Entitlement charges
+            charge.properties?.quota ||          // Usage-based charges
+            charge.quota ||                      // Direct quota field
+            charge.properties?.maxUnits ||       // Max units
+            charge.properties?.maxLicenseQuantity || // License limits
+            charge.properties?.creditsToBeIssued;    // Credit-based
 
-            // Fetch events for this meter's schema and customer
-            const meterEvents = await db.events.find({
-              eventSchemaId: meter.eventSchemaId,
-              customerId: accountId
-            });
-
-            // Parse properties and apply filters
-            const parsedEvents = meterEvents.map(e => ({
-              ...e.toObject(),
-              properties: typeof e.properties === 'string' ? JSON.parse(e.properties) : e.properties,
-            }));
-
-            // Apply meter filter if exists
-            let filteredEvents = parsedEvents;
-            if (meter.filter) {
-              try {
-                const rawFilter = typeof meter.filter === 'string' ? JSON.parse(meter.filter) : meter.filter;
-                const filters = Array.isArray(rawFilter) ? rawFilter : [rawFilter];
-                filteredEvents = parsedEvents.filter(event => {
-                  return filters.every((filter: any) => {
-                    const val = event.properties[filter.key];
-                    return String(val) === String(filter.value);
-                  });
-                });
-              } catch (e) {
-                // If filter parsing fails, use all events
-              }
-            }
-
-            // Aggregate based on meter type
-            if (meter.aggregation === 'count') {
-              currentUsage = filteredEvents.length;
-            } else if (meter.aggregation === 'sum' && meter.field) {
-              const fieldName = meter.field; // Save non-null value
-              currentUsage = filteredEvents.reduce((sum, event) => {
-                return sum + (Number(event.properties[fieldName]) || 0);
-              }, 0);
-            }
-
-            // Calculate simulated usage based on meter aggregation
-            let simulatedUsage = 0;
-            if (meter.aggregation === 'count') {
-              // Count aggregation: each event counts as 1
-              simulatedUsage = count;
-            } else if (meter.aggregation === 'sum' && meter.field) {
-              // Sum aggregation: sum the field value from properties
-              const fieldValue = Number(eventProperties[meter.field] || 0);
-              simulatedUsage = fieldValue * count;
-            }
-
-            const totalAfterSimulation = currentUsage + simulatedUsage;
-            const remaining = quotaLimit - currentUsage;
-            const wouldExceed = totalAfterSimulation > quotaLimit;
-
-            quotaChecks.push({
-              accountId,
-              meterId: meter.id,
-              meterName: meter.name,
-              field: meter.field,
-              aggregation: meter.aggregation,
-              currentUsage,
-              quota: quotaLimit,
-              remaining: Math.max(0, remaining),
-              simulatedUsage,
-              totalAfterSimulation,
-              wouldExceed
-            });
+          if (quotaValue === undefined || quotaValue === null || quotaValue === '' || quotaValue === 0) {
+            console.log('No quota found for charge:', charge.name);
+            continue;
           }
+
+          console.log('✅ Found quota:', quotaValue, 'for charge:', charge.name);
+          const quotaLimit = Number(quotaValue);
+
+          // Calculate current usage based on charge type
+          let currentUsage = 0;
+          let simulatedUsage = 0;
+
+          if (charge.type === 'entitlement' && charge.featureId) {
+            // ENTITLEMENT: Calculate from events with feature property
+            console.log('Processing ENTITLEMENT charge');
+            const featureName = charge.properties?.featureName || charge.name;
+
+            const allEvents = await db.events.find({ customerId: accountId });
+            const matchingEvents = allEvents.filter(e => {
+              try {
+                const props = typeof e.properties === 'string' ? JSON.parse(e.properties) : e.properties;
+                return props[featureName] !== undefined;
+              } catch {
+                return false;
+              }
+            });
+
+            currentUsage = matchingEvents.reduce((sum, e) => {
+              try {
+                const props = typeof e.properties === 'string' ? JSON.parse(e.properties) : e.properties;
+                return sum + (Number(props[featureName]) || 0);
+              } catch {
+                return sum;
+              }
+            }, 0);
+
+            // Simulated usage for entitlement
+            simulatedUsage = (Number(eventProperties[featureName]) || 0) * count;
+            console.log('Entitlement usage:', currentUsage, 'simulated:', simulatedUsage);
+
+          } else if (charge.type === 'usage' && charge.billableMetricId) {
+            // USAGE: Calculate from meter
+            console.log('Processing USAGE charge');
+            const meter = meters.find(m => m.id === charge.billableMetricId);
+
+            if (meter) {
+              const meterEvents = await db.events.find({
+                eventSchemaId: meter.eventSchemaId,
+                customerId: accountId
+              });
+
+              const parsedEvents = meterEvents.map(e => ({
+                ...e.toObject(),
+                properties: typeof e.properties === 'string' ? JSON.parse(e.properties) : e.properties,
+              }));
+
+              let filteredEvents = parsedEvents;
+              if (meter.filter) {
+                try {
+                  const rawFilter = typeof meter.filter === 'string' ? JSON.parse(meter.filter) : meter.filter;
+                  const filters = Array.isArray(rawFilter) ? rawFilter : [rawFilter];
+                  filteredEvents = parsedEvents.filter(event => {
+                    return filters.every((filter: any) => {
+                      const val = event.properties[filter.key];
+                      return String(val) === String(filter.value);
+                    });
+                  });
+                } catch (e) { }
+              }
+
+              if (meter.aggregation === 'count') {
+                currentUsage = filteredEvents.length;
+                simulatedUsage = count;
+              } else if (meter.aggregation === 'sum' && meter.field) {
+                const fieldName = meter.field;
+                currentUsage = filteredEvents.reduce((sum, event) => {
+                  return sum + (Number(event.properties[fieldName]) || 0);
+                }, 0);
+                simulatedUsage = (Number(eventProperties[meter.field]) || 0) * count;
+              }
+
+              console.log('Usage-based usage:', currentUsage, 'simulated:', simulatedUsage);
+            }
+
+          } else {
+            // GENERIC/LICENSE: Show limit but no usage calculation
+            console.log('Processing', charge.type, 'charge - showing limit only');
+            currentUsage = 0;
+            simulatedUsage = 0;
+          }
+
+          const totalAfterSimulation = currentUsage + simulatedUsage;
+          const remaining = quotaLimit - currentUsage;
+          const wouldExceed = totalAfterSimulation > quotaLimit;
+
+          quotaChecks.push({
+            accountId,
+            meterName: charge.name,
+            chargeType: charge.type,
+            currentUsage,
+            quota: quotaLimit,
+            remaining: Math.max(0, remaining),
+            simulatedUsage,
+            totalAfterSimulation,
+            wouldExceed
+          });
         }
       }
     }

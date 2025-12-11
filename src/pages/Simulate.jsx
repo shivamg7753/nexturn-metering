@@ -207,11 +207,21 @@ export const Simulate = () => {
   // Check quotas whenever event configuration changes
   useEffect(() => {
     const checkQuotas = async () => {
+      console.log('=== QUOTA CHECK TRIGGERED ===');
+      console.log('selectedCustomerId:', selectedCustomerId);
+      console.log('selectedEventSchemaId:', selectedEventSchemaId);
+      console.log('eventCount:', eventCount);
+      console.log('accountSelection:', accountSelection);
+      console.log('selectedAccountIds:', selectedAccountIds);
+      console.log('accounts:', accounts);
+
       if (selectedEventSchemaId && eventCount > 0 && (accountSelection === 'all' || selectedAccountIds.length > 0)) {
         try {
           setCheckingQuota(true);
 
           const targetAccountIds = accountSelection === 'all' ? accounts.map(a => a.id) : selectedAccountIds;
+
+          console.log('targetAccountIds:', targetAccountIds);
 
           const params = new URLSearchParams({
             customerId: selectedCustomerId,
@@ -221,8 +231,13 @@ export const Simulate = () => {
             properties: JSON.stringify(eventProperties)
           });
 
+          console.log('Calling quota-check API with params:', params.toString());
+
           const response = await fetch(`http://localhost:3000/api/simulate/quota-check?${params}`);
+          console.log('Quota check response status:', response.status);
+
           const data = await response.json();
+          console.log('Quota check data received:', data);
 
           setQuotaStatus(data);
         } catch (err) {
@@ -232,6 +247,7 @@ export const Simulate = () => {
           setCheckingQuota(false);
         }
       } else {
+        console.log('Quota check skipped - conditions not met');
         setQuotaStatus(null);
       }
     };
@@ -239,7 +255,7 @@ export const Simulate = () => {
     // Debounce quota check
     const timer = setTimeout(checkQuotas, 500);
     return () => clearTimeout(timer);
-  }, [selectedEventSchemaId, eventCount, eventProperties, accountSelection, selectedAccountIds, accounts]);
+  }, [selectedEventSchemaId, eventCount, eventProperties, accountSelection, selectedAccountIds, accounts, selectedCustomerId]);
 
   const handlePropertyChange = (key, value) => {
     setEventProperties(prev => ({
