@@ -2,3 +2,8 @@
 [2025-12-09T18:28:13.227Z] CHECK: customer=c13e24f1-1e92-4b3e-ae34-61da185ded36 plan=cf7d94e6-10f7-48a6-8037-a91e3112b726 productId='undefined' status=active
 [2025-12-09T18:56:18.886Z] CHECK: customer=2f0a2053-a0ab-47d4-be06-e04ac83dbc36 plan=plan_47mvcgl productId='prod_1765297558981' status=active
 [2025-12-09T18:56:45.461Z] CHECK: customer=2f0a2053-a0ab-47d4-be06-e04ac83dbc36 plan=plan_47mvcgl productId='prod_1765297558981' status=active
+[2025-12-11T04:16:22.780Z] CHECK: customer=4d88d0a8-98ce-426d-925a-8d65527c6bbb plan=plan_5wiwwfz productId='prod_1765426417097' status=active
+[2025-12-11T04:31:25.262Z] CHECK: customer=cus_32d9o9a plan=plan_lk0wn09 productId='prod_1765297558981' status=active
+[2025-12-11T05:29:17.631Z] CHECK: customer=561e084f-6ec4-4420-85ae-e65c4adf4936 plan=plan_5wiwwfz productId='prod_1765426417097' status=active
+[2025-12-11T05:39:58.822Z] CHECK: customer=a359780f-f200-4b49-a024-8fd3eb83e19e plan=plan_fm4zbe6 productId='prod_1765426417097' status=active
+[2025-12-11T05:41:01.510Z] CHECK: customer=11dd0e69-2013-4f5c-8860-e852b1c8e922 plan=plan_iqltxdr productId='prod_1765426417097' status=active

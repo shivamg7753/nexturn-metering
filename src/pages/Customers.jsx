@@ -215,27 +215,33 @@ export const Customers = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {state.customers.map((customer) => (
-                    <tr key={customer.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-semibold mr-3">
-                            {customer.name.charAt(0).toUpperCase()}
+                  {state.customers
+                    .filter(customer => !customer.metadata?.parentCustomerId) // Only show parent customers, not child accounts
+                    .map((customer) => (
+                      <tr
+                        key={customer.id}
+                        onClick={() => navigate(`/customers/${customer.id}`)}
+                        className="hover:bg-gray-50 transition-colors cursor-pointer"
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-semibold mr-3">
+                              {customer.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">{customer.name}</div>
+                              <div className="text-sm text-gray-500">{customer.email}</div>
+                            </div>
                           </div>
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">{customer.name}</div>
-                            <div className="text-sm text-gray-500">{customer.email}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{customer.externalId || customer.customerId}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">{customer.createdAt}</div>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{customer.externalId || customer.customerId}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-500">{customer.createdAt}</div>
+                        </td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </div>
