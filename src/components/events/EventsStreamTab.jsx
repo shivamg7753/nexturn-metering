@@ -189,12 +189,36 @@ export const EventsStreamTab = () => {
                                             {selectedEvent.id}
                                         </div>
                                     </div>
+                                    {selectedEvent.productId && (
+                                        <div>
+                                            <span className="text-gray-600">Product ID:</span>
+                                            <div className="font-mono bg-white px-2 py-1 rounded text-xs mt-1">
+                                                {selectedEvent.productId}
+                                            </div>
+                                        </div>
+                                    )}
                                     <div>
                                         <span className="text-gray-600">Timestamp:</span>
                                         <div className="font-medium mt-1">
                                             {new Date(selectedEvent.timestamp).toLocaleString()}
                                         </div>
                                     </div>
+                                    {selectedEvent.startDate && (
+                                        <div>
+                                            <span className="text-gray-600">Plan Start Date:</span>
+                                            <div className="font-medium mt-1">
+                                                {new Date(selectedEvent.startDate).toLocaleString()}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {selectedEvent.endDate && (
+                                        <div>
+                                            <span className="text-gray-600">Plan End Date:</span>
+                                            <div className="font-medium mt-1">
+                                                {new Date(selectedEvent.endDate).toLocaleString()}
+                                            </div>
+                                        </div>
+                                    )}
                                     <div>
                                         <span className="text-gray-600">Event Schema:</span>
                                         <div className="font-medium mt-1">
@@ -277,7 +301,15 @@ export const EventsStreamTab = () => {
                                     Raw Event Data (JSON)
                                 </h4>
                                 <pre className="bg-white p-3 rounded-md text-xs overflow-x-auto border border-gray-300 max-h-64">
-                                    {JSON.stringify(selectedEvent, null, 2)}
+                                    {JSON.stringify({
+                                        ...selectedEvent,
+                                        eventId: selectedEvent.id, // Add eventId
+                                        planStartDate: selectedEvent.startDate, // Rename startDate
+                                        planEndDate: selectedEvent.endDate, // Rename endDate
+                                        id: undefined, // Remove id
+                                        startDate: undefined, // Remove startDate
+                                        endDate: undefined // Remove endDate
+                                    }, (key, value) => ['id', 'startDate', 'endDate'].includes(key) ? undefined : value, 2)}
                                 </pre>
                             </div>
                         </div>

@@ -40,6 +40,9 @@ const eventSchema = new mongoose.Schema({
   timestamp: { type: Date, required: true },
   properties: { type: String, required: true }, // JSON string
   customerId: { type: String, required: true },
+  productId: { type: String },
+  startDate: { type: Date },
+  endDate: { type: Date },
   createdAt: { type: Date, default: Date.now },
 });
 

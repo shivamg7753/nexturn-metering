@@ -289,6 +289,7 @@ export const Simulate = () => {
         },
         body: JSON.stringify({
           customerId: selectedCustomerId,
+          productId: selectedProductId,
           accountSelection: accountSelection,
           accountIds: targetAccountIds,
           eventSchemaId: selectedEventSchemaId,
@@ -659,7 +660,10 @@ export const Simulate = () => {
                   {quotaStatus.quotas.map((quota, idx) => (
                     <div key={idx} className="bg-white rounded p-3">
                       <div className="flex justify-between items-start mb-2">
-                        <span className="font-medium text-gray-900">{quota.meterName}</span>
+                        <span className="font-medium text-gray-900">
+                          {quota.meterName}
+                          {quota.planName && <span className="text-gray-500 font-normal ml-1">({quota.planName})</span>}
+                        </span>
                         {quota.wouldExceed && (
                           <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Quota Exceeded</span>
                         )}
@@ -683,6 +687,37 @@ export const Simulate = () => {
                           <span className="text-gray-600">Remaining:</span>
                           <span className="font-mono">{quota.remaining.toLocaleString()}</span>
                         </div>
+
+                        {/* Debug Info for Simulator */}
+                        <details className="mt-2 text-xs text-gray-400 cursor-pointer text-left">
+                          <summary>Debug</summary>
+                          <div className="pl-2 mt-1 border-l-2 border-gray-200">
+                            <p>Charge: {quota.chargeType}</p>
+                            <p>Field Needed: {quota.targetField || 'N/A'}</p>
+                            {quota.targetFieldReason && <p className="text-[10px] text-gray-500 italic">Reason: {quota.targetFieldReason}</p>}
+
+                            {quota.chargeType === 'usage' && (
+                              <>
+                                <p>Meter Schema: {quota.meterSchemaId}</p>
+                                <div className="flex gap-2">
+                                  <p>Aggregation: {quota.meterAggregation} ({quota.meterField || 'No Field'})</p>
+                                </div>
+                                {quota.meterFilter && <p className="text-orange-600">Filter: {JSON.stringify(quota.meterFilter)}</p>}
+                              </>
+                            )}
+                            <p>Matched: {quota.matchedEventCount}</p>
+                            <div className="text-[10px] text-gray-500">
+                              User Events Schemas:
+                              <div className="font-mono ml-2">
+                                {quota.userEventSchemas?.map(id => (
+                                  <div key={id} className={id === quota.meterSchemaId ? 'text-green-600 font-bold' : 'text-red-500'}>
+                                    {id} {id === quota.meterSchemaId ? '(MATCH)' : '(MISMATCH)'}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </details>
                       </div>
 
                       {/* Progress Bar */}
@@ -720,6 +755,7 @@ export const Simulate = () => {
                 </h4>
 
                 {(() => {
+                  console.log('[Simulate] Render Dimensions. Quotas:', quotaStatus?.quotas);
                   // Parse dimensions if it's a JSON string
                   let dimensionsData = selectedSchema.dimensions;
                   if (typeof dimensionsData === 'string') {
@@ -744,6 +780,34 @@ export const Simulate = () => {
                         ...(dimensionsData.dimensions || [])
                       ];
                     }
+                  }
+
+                  // Auto-merge fields from active quotas if they are missing from schema
+                  // This allows simulating events for entitlements (like "custom voices") that need a property input
+                  if (quotaStatus?.quotas) {
+                    console.log('[Simulate] Processing quotas for injection:', quotaStatus.quotas.length);
+                    quotaStatus.quotas.forEach(q => {
+                      // Use the backend-identified target field. 
+                      // if targetField is empty (e.g. 'count' aggregation), WE DO NOT NEED AN INPUT
+                      // DO NOT fallback to meterName as that creates dummy fields like "API HITS"
+                      const fieldName = q.targetField;
+
+                      // Skip if field name is empty
+                      if (!fieldName) return;
+
+                      const exists = allFields.find(f => f.name === fieldName);
+                      console.log(`[Simulate] Field Check: ${fieldName}, Exists: ${!!exists}`);
+
+                      if (!exists) {
+                        console.log(`[Simulate] Injecting field: ${fieldName}`);
+                        allFields.push({
+                          name: fieldName,
+                          type: 'number', // Assume quotas track numeric values/counts
+                          description: `Required for ${q.meterName} (${q.chargeType})`,
+                          required: false
+                        });
+                      }
+                    });
                   }
 
                   if (allFields.length === 0) {

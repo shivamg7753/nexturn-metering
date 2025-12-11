@@ -55,13 +55,43 @@ export const QuotaUsageCard = ({ accountId, accountName }) => {
             console.log('Full charge object:', charge);
 
             // Check for quota in ALL possible locations
-            const quotaValue =
+            // Check for quota in ALL possible locations
+            let quotaValue =
               charge.entitlementLimit ||           // Entitlement charges
               charge.properties?.quota ||          // Usage-based charges
               charge.quota ||                      // Direct quota field
               charge.properties?.maxUnits ||       // Max units
               charge.properties?.maxLicenseQuantity || // License limits
               charge.properties?.creditsToBeIssued;    // Credit-based
+
+            // Tiered/Volume Limit Logic - ROBUST CHECK
+            if (!quotaValue && charge.tiers && Array.isArray(charge.tiers) && charge.tiers.length > 0) {
+              console.log('Checking tiers for quota:', charge.tiers);
+
+              // Filter out tiers that are clearly infinite
+              const finiteTiers = charge.tiers.filter(t =>
+                t.lastUnit !== null &&
+                t.lastUnit !== undefined &&
+                t.lastUnit !== '∞' &&
+                String(t.lastUnit) !== ''
+              );
+
+              console.log('Finite tiers found:', finiteTiers.length, 'Total tiers:', charge.tiers.length);
+
+              // If all tiers are finite, use the max limit
+              if (finiteTiers.length === charge.tiers.length && finiteTiers.length > 0) {
+                const maxLimit = Math.max(...finiteTiers.map(t => Number(t.lastUnit)));
+                if (maxLimit > 0 && !isNaN(maxLimit)) quotaValue = maxLimit;
+              } else if (charge.tiers[0] && charge.tiers[0].lastUnit && charge.tiers[0].lastUnit !== '∞') {
+                // Fallback: Use the FIRST tier's limit (e.g. Free Tier limit)
+                // This handles cases like "First 1M free, then pay-as-you-go"
+                const firstTierLimit = Number(charge.tiers[0].lastUnit);
+                if (firstTierLimit > 0 && !isNaN(firstTierLimit)) {
+                  console.log('Using First Tier limit as quota:', firstTierLimit);
+                  quotaValue = firstTierLimit;
+                }
+              }
+            }
 
             console.log('Quota value found:', quotaValue);
 
@@ -71,6 +101,7 @@ export const QuotaUsageCard = ({ accountId, accountName }) => {
               let meterOrFeatureName = charge.name;
               let fieldName = null;
               let currentUsage = 0;
+              let matchedEventCount = 0;
 
               // Determine how to calculate usage based on charge type
               if (charge.type === 'entitlement' && charge.featureId) {
@@ -99,6 +130,7 @@ export const QuotaUsageCard = ({ accountId, accountName }) => {
                     return false;
                   }
                 });
+                matchedEventCount = matchingEvents.length;
 
                 currentUsage = matchingEvents.reduce((sum, e) => {
                   try {
@@ -140,6 +172,8 @@ export const QuotaUsageCard = ({ accountId, accountName }) => {
                       console.error('Error parsing filters:', e);
                     }
                   }
+                  
+                  matchedEventCount = parsedEvents.length;
 
                   if (meter.aggregation === 'count') {
                     currentUsage = parsedEvents.length;
@@ -161,6 +195,7 @@ export const QuotaUsageCard = ({ accountId, accountName }) => {
                 currentUsage = 0; // License usage needs different tracking
                 meterOrFeatureName = charge.name;
                 fieldName = 'licenses';
+                matchedEventCount = 0;
 
               } else {
                 // GENERIC: Try to find usage from events with matching charge name
@@ -174,6 +209,7 @@ export const QuotaUsageCard = ({ accountId, accountName }) => {
                     return false;
                   }
                 });
+                matchedEventCount = matchingEvents.length;
 
                 currentUsage = matchingEvents.reduce((sum, e) => {
                   try {
@@ -188,6 +224,20 @@ export const QuotaUsageCard = ({ accountId, accountName }) => {
                 console.log('Generic usage:', currentUsage, 'from', matchingEvents.length, 'events');
               }
 
+              // Collect debug info for frontend
+              const distinctSchemas = [...new Set(events.map(e => e.eventSchemaId))];
+              let sampleKeys = [];
+              if (events.length > 0) {
+                const lastEvent = events[events.length - 1];
+                try {
+                  const props = typeof lastEvent.properties === 'string' ? JSON.parse(lastEvent.properties) : lastEvent.properties;
+                  sampleKeys = Object.keys(props);
+                } catch { }
+              }
+              const meterForDebug = (charge.type === 'usage' && charge.billableMetricId)
+                ? meters.find(m => m.id === charge.billableMetricId)
+                : null;
+
               const quota = Number(quotaValue);
               const remaining = Math.max(0, quota - currentUsage);
               const usagePercent = quota > 0 ? (currentUsage / quota) * 100 : 0;
@@ -200,7 +250,13 @@ export const QuotaUsageCard = ({ accountId, accountName }) => {
                 quota,
                 remaining,
                 usagePercent: Math.min(usagePercent, 100),
-                status: usagePercent >= 100 ? 'exceeded' : usagePercent >= 80 ? 'warning' : 'ok'
+                status: usagePercent >= 100 ? 'exceeded' : usagePercent >= 80 ? 'warning' : 'ok',
+                // Debug Fields populated locally
+                targetField: fieldName, // Redundant but kept for consistency with debug display
+                matchedEventCount: matchedEventCount,
+                meterSchemaId: meterForDebug ? meterForDebug.eventSchemaId : 'N/A',
+                userEventSchemas: distinctSchemas,
+                sampleEventKeys: sampleKeys
               });
 
               console.log('✅ Added quota:', {
@@ -240,14 +296,33 @@ export const QuotaUsageCard = ({ accountId, accountName }) => {
     );
   }
 
-  if (!quotaData || quotaData.length === 0) {
+  if (quotaData === null) {
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <div className="flex items-center gap-3 mb-4">
           <BarChart3 className="w-5 h-5 text-gray-400" />
           <h3 className="text-sm font-semibold text-gray-900">Quota & Usage</h3>
         </div>
-        <p className="text-sm text-gray-500">No quota limits configured for this account.</p>
+        <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-100">
+          <p className="text-sm text-yellow-800 font-medium">No active subscriptions found.</p>
+          <p className="text-xs text-yellow-600 mt-1">Assign a plan to this account to see quotas.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (quotaData.length === 0) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <BarChart3 className="w-5 h-5 text-gray-400" />
+          <h3 className="text-sm font-semibold text-gray-900">Quota & Usage</h3>
+        </div>
+        <p className="text-sm text-gray-500">
+          No quota limits configured in the active plan.
+          {/* Debug info hidden from normal view but available in DOM */}
+          <span className="hidden">Plan has charges but no quotas detected.</span>
+        </p>
       </div>
     );
   }
@@ -294,14 +369,34 @@ export const QuotaUsageCard = ({ accountId, accountName }) => {
               ></div>
             </div>
 
-            {/* Stats */}
+            {/* Stats                      {/* Debugging Mismatch Info */}
+            <details className="mt-2 text-xs text-gray-400 cursor-pointer">
+              <summary>Debug</summary>
+              <div className="pl-2 mt-1 border-l-2 border-gray-200">
+                <p>Meter: {quota.meterName}</p>
+                <p>Field Needed: {quota.targetField || 'count'}</p>
+                <p>Events Found: {quota.matchedEventCount || 0}</p>
+                <p className="text-[10px] font-mono mt-1">Meter Schema: {quota.meterSchemaId}</p>
+                <div className="text-[10px] text-gray-500">
+                  User Events Schemas:
+                  <div className="font-mono ml-2">
+                    {quota.userEventSchemas?.map(id => (
+                      <div key={id} className={id === quota.meterSchemaId ? 'text-green-600 font-bold' : 'text-red-500'}>
+                        {id} {id === quota.meterSchemaId ? '(MATCH)' : '(MISMATCH)'}
+                      </div>
+                    ))}
+                    {!quota.userEventSchemas?.length && 'No events found'}
+                  </div>
+                </div>
+                {quota.sampleEventKeys && (
+                  <p>Keys Found: {quota.sampleEventKeys.join(', ')}</p>
+                )}
+              </div>
+            </details>
+
             <div className="flex justify-between text-xs">
-              <span className="text-gray-600">
-                Remaining: <span className="font-medium text-gray-900">{quota.remaining.toLocaleString()}</span>
-              </span>
-              <span className="text-gray-600">
-                <span className="font-medium text-gray-900">{quota.usagePercent.toFixed(1)}%</span> used
-              </span>
+              <span className="text-gray-600">Remaining: <span className="font-medium text-gray-900">{quota.remaining?.toLocaleString()}</span></span>
+              <span className="text-gray-600"><span className="font-medium text-gray-900">{((quota.currentUsage / quota.quota) * 100).toFixed(1)}%</span> used</span>
             </div>
 
             {quota.status === 'exceeded' && (
