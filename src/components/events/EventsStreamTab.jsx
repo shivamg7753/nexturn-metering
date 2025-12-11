@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Calendar, X, Filter } from 'lucide-react';
+import { Search, Calendar, X, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { api } from '../../api/client';
 
 export const EventsStreamTab = () => {
@@ -9,6 +9,10 @@ export const EventsStreamTab = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [filterSchema, setFilterSchema] = useState('all');
     const [selectedEvent, setSelectedEvent] = useState(null);
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(25);
 
     useEffect(() => {
         loadData();
@@ -40,6 +44,11 @@ export const EventsStreamTab = () => {
         }
     };
 
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, filterSchema]);
+
     // Filter events
     const filteredEvents = (events || []).filter(event => {
         const eventSchemaName = (schemas || []).find(s => s.id === event.eventSchemaId)?.name || event.eventSchemaId || '';
@@ -50,6 +59,22 @@ export const EventsStreamTab = () => {
 
         return matchesSearch && matchesSchema;
     });
+
+    // Pagination calculations
+    const totalPages = Math.ceil(filteredEvents.length / pageSize);
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const paginatedEvents = filteredEvents.slice(startIndex, endIndex);
+
+    // Pagination handlers
+    const goToPage = (page) => {
+        setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+    };
+
+    const handlePageSizeChange = (newSize) => {
+        setPageSize(newSize);
+        setCurrentPage(1); // Reset to first page when changing page size
+    };
 
     if (loading) {
         return (
@@ -113,7 +138,7 @@ export const EventsStreamTab = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
-                                {filteredEvents.map((event, idx) => (
+                                {paginatedEvents.map((event, idx) => (
                                     <tr
                                         key={`${event.id}-${idx}`}
                                         onClick={() => setSelectedEvent(event)}
@@ -146,11 +171,81 @@ export const EventsStreamTab = () => {
                         </table>
                     </div>
 
-                    {/* Pagination info */}
+                    {/* Pagination Controls */}
                     <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
-                        <p className="text-sm text-gray-500">
-                            Showing {filteredEvents.length} event{filteredEvents.length !== 1 ? 's' : ''}
-                        </p>
+                        <div className="flex items-center justify-between">
+                            {/* Pagination Info */}
+                            <div className="flex items-center gap-4">
+                                <p className="text-sm text-gray-500">
+                                    Showing {startIndex + 1} to {Math.min(endIndex, filteredEvents.length)} of {filteredEvents.length} event{filteredEvents.length !== 1 ? 's' : ''}
+                                </p>
+
+                                {/* Page Size Selector */}
+                                <div className="flex items-center gap-2">
+                                    <label className="text-sm text-gray-500">Show:</label>
+                                    <select
+                                        value={pageSize}
+                                        onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                                        className="px-2 py-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                    >
+                                        <option value={10}>10</option>
+                                        <option value={25}>25</option>
+                                        <option value={50}>50</option>
+                                        <option value={100}>100</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Pagination Buttons */}
+                            {totalPages > 1 && (
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => goToPage(currentPage - 1)}
+                                        disabled={currentPage === 1}
+                                        className="p-2 rounded-md hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        <ChevronLeft className="w-5 h-5 text-gray-600" />
+                                    </button>
+
+                                    {/* Page Numbers */}
+                                    <div className="flex items-center gap-1">
+                                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                            let pageNum;
+                                            if (totalPages <= 5) {
+                                                pageNum = i + 1;
+                                            } else if (currentPage <= 3) {
+                                                pageNum = i + 1;
+                                            } else if (currentPage >= totalPages - 2) {
+                                                pageNum = totalPages - 4 + i;
+                                            } else {
+                                                pageNum = currentPage - 2 + i;
+                                            }
+
+                                            return (
+                                                <button
+                                                    key={pageNum}
+                                                    onClick={() => goToPage(pageNum)}
+                                                    className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${currentPage === pageNum
+                                                        ? 'bg-indigo-600 text-white'
+                                                        : 'text-gray-700 hover:bg-gray-200'
+                                                        }`}
+                                                >
+                                                    {pageNum}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+
+                                    <button
+                                        onClick={() => goToPage(currentPage + 1)}
+                                        disabled={currentPage === totalPages}
+                                        className="p-2 rounded-md hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        <ChevronRight className="w-5 h-5 text-gray-600" />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}
