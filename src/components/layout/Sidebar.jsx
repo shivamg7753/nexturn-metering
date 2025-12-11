@@ -25,7 +25,7 @@ export const Sidebar = () => {
                 <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center mr-3">
                     <Zap className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-lg font-bold text-white tracking-tight">LagoClone</span>
+                <span className="text-lg font-bold text-white tracking-tight">Nexturn Metering</span>
             </div>
 
             <nav className="flex-1 px-4 py-6 space-y-1">
