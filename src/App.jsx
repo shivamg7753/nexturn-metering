@@ -22,6 +22,7 @@ import { PlanDetailPage } from './pages/PlanDetailPage';
 import { Events } from './pages/Events';
 import { Products } from './pages/Products';
 import { ProductDetail } from './pages/ProductDetail';
+import { Simulate } from './pages/Simulate';
 
 
 const DashboardLoader = () => {
@@ -148,6 +149,7 @@ const DashboardLoader = () => {
                     <Route path="invoices" element={<PlaceholderPage title="Invoices" />} />
                     <Route path="credit-notes" element={<PlaceholderPage title="Credit Notes" />} />
                     <Route path="events" element={<Events />} />
+                    <Route path="simulate" element={<Simulate />} />
                     <Route path="coupons" element={<PlaceholderPage title="Coupons" />} />
                     <Route path="wallets" element={<PlaceholderPage title="Wallets" />} />
                     <Route path="schemas" element={<Schemas />} />

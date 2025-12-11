@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useApp } from '../context/store';
 import { ChevronRight, ArrowLeft, MoreHorizontal, Copy, Tag, X, Calendar, Edit2, CheckCircle2 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
+import { QuotaUsageCard } from '../components/customers/QuotaUsageCard';
 
 export const AccountDetail = () => {
     const { accountId } = useParams();
@@ -457,6 +458,11 @@ export const AccountDetail = () => {
                                 {(!account.accountAlias && (!account.aliases || account.aliases.length === 0)) && (
                                     <span className="text-xs text-gray-400 italic">No aliases</span>
                                 )}
+                            </div>
+
+                            {/* Quota & Usage Section */}
+                            <div className="mt-8">
+                                <QuotaUsageCard accountId={account.id} accountName={account.accountName || account.name} />
                             </div>
                         </div>
                     </div>

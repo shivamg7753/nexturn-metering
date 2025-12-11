@@ -254,7 +254,337 @@ app.post('/api/events', async (req, res) => {
   }
 });
 
-// 4. Customers (MOVED TO MODULAR ROUTES - see routes/customers.routes.ts)
+// 4. Simulate Events
+
+// Quota Check for Simulation
+app.get('/api/simulate/quota-check', async (req, res) => {
+  try {
+    const { customerId, accountIds, eventSchemaId, eventCount, properties } = req.query;
+
+    // Validate required fields
+    if (!customerId || !accountIds || !eventSchemaId || !eventCount) {
+      return res.status(400).json({ error: 'Missing required query parameters' });
+    }
+
+    const targetAccountIds = JSON.parse(accountIds as string);
+    const count = parseInt(eventCount as string);
+    const eventProperties = properties ? JSON.parse(properties as string) : {};
+
+    // Get event schema to find associated meters
+    const schema = await db.eventSchemas.findOne({ id: eventSchemaId });
+    if (!schema) {
+      return res.status(404).json({ error: 'Event schema not found' });
+    }
+
+    // Get all meters that use this schema
+    const meters = await db.meters.find({ eventSchemaId });
+
+    const quotaChecks: any[] = [];
+
+    // Check quota for each account
+    for (const accountId of targetAccountIds) {
+      // Get active subscriptions for this account
+      const subscriptions = await db.subscriptions.find({
+        customerId: accountId,
+        status: 'active'
+      });
+
+      if (subscriptions.length === 0) {
+        continue; // Skip accounts with no subscriptions
+      }
+
+      // Get plans for these subscriptions
+      const planIds = subscriptions.map(sub => sub.planId);
+      const plans = await db.plans.find({ id: { $in: planIds } });
+
+      // Check each meter
+      for (const meter of meters) {
+        // Find charges for this meter in the plans
+        for (const plan of plans) {
+          const charges = JSON.parse(plan.charges as string || '[]');
+          const charge = charges.find((c: any) => c.billableMetricId === meter.id);
+
+          if (charge && charge.properties?.quota !== undefined && charge.properties?.quota !== null) {
+            const quotaLimit = Number(charge.properties.quota);
+
+            // Calculate current usage for this meter and account by aggregating events
+            let currentUsage = 0;
+
+            // Fetch events for this meter's schema and customer
+            const meterEvents = await db.events.find({
+              eventSchemaId: meter.eventSchemaId,
+              customerId: accountId
+            });
+
+            // Parse properties and apply filters
+            const parsedEvents = meterEvents.map(e => ({
+              ...e.toObject(),
+              properties: typeof e.properties === 'string' ? JSON.parse(e.properties) : e.properties,
+            }));
+
+            // Apply meter filter if exists
+            let filteredEvents = parsedEvents;
+            if (meter.filter) {
+              try {
+                const rawFilter = typeof meter.filter === 'string' ? JSON.parse(meter.filter) : meter.filter;
+                const filters = Array.isArray(rawFilter) ? rawFilter : [rawFilter];
+                filteredEvents = parsedEvents.filter(event => {
+                  return filters.every((filter: any) => {
+                    const val = event.properties[filter.key];
+                    return String(val) === String(filter.value);
+                  });
+                });
+              } catch (e) {
+                // If filter parsing fails, use all events
+              }
+            }
+
+            // Aggregate based on meter type
+            if (meter.aggregation === 'count') {
+              currentUsage = filteredEvents.length;
+            } else if (meter.aggregation === 'sum' && meter.field) {
+              const fieldName = meter.field; // Save non-null value
+              currentUsage = filteredEvents.reduce((sum, event) => {
+                return sum + (Number(event.properties[fieldName]) || 0);
+              }, 0);
+            }
+
+            // Calculate simulated usage based on meter aggregation
+            let simulatedUsage = 0;
+            if (meter.aggregation === 'count') {
+              // Count aggregation: each event counts as 1
+              simulatedUsage = count;
+            } else if (meter.aggregation === 'sum' && meter.field) {
+              // Sum aggregation: sum the field value from properties
+              const fieldValue = Number(eventProperties[meter.field] || 0);
+              simulatedUsage = fieldValue * count;
+            }
+
+            const totalAfterSimulation = currentUsage + simulatedUsage;
+            const remaining = quotaLimit - currentUsage;
+            const wouldExceed = totalAfterSimulation > quotaLimit;
+
+            quotaChecks.push({
+              accountId,
+              meterId: meter.id,
+              meterName: meter.name,
+              field: meter.field,
+              aggregation: meter.aggregation,
+              currentUsage,
+              quota: quotaLimit,
+              remaining: Math.max(0, remaining),
+              simulatedUsage,
+              totalAfterSimulation,
+              wouldExceed
+            });
+          }
+        }
+      }
+    }
+
+    // Determine if simulation is allowed (all quotas must be ok)
+    const anyExceeded = quotaChecks.some(check => check.wouldExceed);
+    const allowed = !anyExceeded;
+
+    res.json({
+      allowed,
+      quotas: quotaChecks,
+      message: anyExceeded
+        ? 'Quota would be exceeded - simulation not allowed'
+        : 'Simulation allowed'
+    });
+
+  } catch (error) {
+    console.error('Error checking quota:', error);
+    res.status(500).json({ error: 'Failed to check quota' });
+  }
+});
+
+app.post('/api/simulate', async (req, res) => {
+  try {
+    const { customerId, accountSelection, accountIds, eventSchemaId, eventConfig } = req.body;
+
+    // Validate required fields
+    if (!customerId || !eventSchemaId || !eventConfig) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Validate customer exists
+    const customer = await db.customers.findOne({ id: customerId });
+    if (!customer) {
+      return res.status(404).json({ error: 'Customer not found' });
+    }
+
+    // Validate event schema exists
+    const schema = await db.eventSchemas.findOne({ id: eventSchemaId });
+    if (!schema) {
+      return res.status(404).json({ error: 'Event schema not found' });
+    }
+
+    // Determine target accounts
+    let targetAccountIds = [];
+    if (accountSelection === 'all') {
+      // Find all accounts for this customer
+      const allCustomerAccounts = await db.customers.find({
+        $or: [
+          { id: customerId },
+          { 'metadata': new RegExp(`"parentCustomerId":"${customerId}"`) }
+        ]
+      });
+      targetAccountIds = allCustomerAccounts.map(a => a.id);
+    } else if (accountSelection === 'specific') {
+      if (!accountIds || accountIds.length === 0) {
+        return res.status(400).json({ error: 'No account IDs provided for specific selection' });
+      }
+      targetAccountIds = accountIds;
+    } else {
+      return res.status(400).json({ error: 'Invalid account selection type' });
+    }
+
+    // Validate accounts exist
+    for (const accountId of targetAccountIds) {
+      const account = await db.customers.findOne({ id: accountId });
+      if (!account) {
+        return res.status(404).json({ error: `Account ${accountId} not found` });
+      }
+    }
+
+    const { count = 1, properties = {} } = eventConfig;
+    const eventsToCreate = Math.min(Math.max(1, count), 100); // Limit to 1-100 events
+
+    // ===== QUOTA VALIDATION =====
+    // Check quotas before creating events
+    const meters = await db.meters.find({ eventSchemaId });
+
+    for (const accountId of targetAccountIds) {
+      const subscriptions = await db.subscriptions.find({
+        customerId: accountId,
+        status: 'active'
+      });
+
+      if (subscriptions.length > 0) {
+        const planIds = subscriptions.map(sub => sub.planId);
+        const plans = await db.plans.find({ id: { $in: planIds } });
+
+        for (const meter of meters) {
+          for (const plan of plans) {
+            const charges = JSON.parse(plan.charges as string || '[]');
+            const charge = charges.find((c: any) => c.billableMetricId === meter.id);
+
+            if (charge && charge.properties?.quota !== undefined && charge.properties?.quota !== null) {
+              const quotaLimit = Number(charge.properties.quota);
+
+              // Get current usage by aggregating events
+              let currentUsage = 0;
+
+              const meterEvents = await db.events.find({
+                eventSchemaId: meter.eventSchemaId,
+                customerId: accountId
+              });
+
+              const parsedEvents = meterEvents.map(e => ({
+                ...e.toObject(),
+                properties: typeof e.properties === 'string' ? JSON.parse(e.properties) : e.properties,
+              }));
+
+              let filteredEvents = parsedEvents;
+              if (meter.filter) {
+                try {
+                  const rawFilter = typeof meter.filter === 'string' ? JSON.parse(meter.filter) : meter.filter;
+                  const filters = Array.isArray(rawFilter) ? rawFilter : [rawFilter];
+                  filteredEvents = parsedEvents.filter(event => {
+                    return filters.every((filter: any) => {
+                      const val = event.properties[filter.key];
+                      return String(val) === String(filter.value);
+                    });
+                  });
+                } catch (e) {
+                  // If filter parsing fails, use all events
+                }
+              }
+
+              if (meter.aggregation === 'count') {
+                currentUsage = filteredEvents.length;
+              } else if (meter.aggregation === 'sum' && meter.field) {
+                const fieldName = meter.field; // Save non-null value
+                currentUsage = filteredEvents.reduce((sum, event) => {
+                  return sum + (Number(event.properties[fieldName]) || 0);
+                }, 0);
+              }
+
+              // Calculate simulated usage
+              let simulatedUsage = 0;
+              if (meter.aggregation === 'count') {
+                simulatedUsage = eventsToCreate;
+              } else if (meter.aggregation === 'sum' && meter.field) {
+                const fieldValue = Number(properties[meter.field] || 0);
+                simulatedUsage = fieldValue * eventsToCreate;
+              }
+
+              const totalAfterSimulation = currentUsage + simulatedUsage;
+
+              // Block if quota would be exceeded
+              if (totalAfterSimulation > quotaLimit) {
+                return res.status(403).json({
+                  error: 'Quota exceeded - simulation not allowed',
+                  details: {
+                    accountId,
+                    meterName: meter.name,
+                    currentUsage,
+                    quota: quotaLimit,
+                    remaining: quotaLimit - currentUsage,
+                    simulatedUsage,
+                    totalAfterSimulation,
+                    exceeded: totalAfterSimulation - quotaLimit
+                  }
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+    // ===== END QUOTA VALIDATION =====
+
+    const createdEvents: any[] = [];
+    const now = new Date();
+
+    for (let i = 0; i < eventsToCreate; i++) {
+      for (const accountId of targetAccountIds) {
+        // Generate unique transaction ID
+        const transactionId = `sim_${Date.now()}_${accountId}_${i}_${Math.random().toString(36).substring(7)}`;
+
+        // Create timestamp with slight variation (spread events over last minute)
+        const timestamp = new Date(now.getTime() - (eventsToCreate - i - 1) * 1000);
+
+        // Create event
+        const event = await db.events.create({
+          transactionId,
+          eventSchemaId,
+          timestamp,
+          properties: JSON.stringify(properties),
+          customerId: accountId
+        });
+
+        createdEvents.push(event);
+      }
+    }
+
+    res.json({
+      success: true,
+      eventsCreated: createdEvents.length,
+      events: createdEvents.map(e => ({
+        ...e.toObject(),
+        properties: JSON.parse(e.properties)
+      }))
+    });
+  } catch (error) {
+    console.error('Error simulating events:', error);
+    res.status(500).json({ error: 'Failed to simulate events' });
+  }
+});
+
+// 5. Customers (MOVED TO MODULAR ROUTES - see routes/customers.routes.ts)
 // app.get('/api/customers', ...) - Now in customers.controller.ts
 // app.post('/api/customers', ...) - Now in customers.controller.ts
 

@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { Search, Calendar, X, Filter } from 'lucide-react';
 import { api } from '../../api/client';
-import { Calendar, Search, Filter } from 'lucide-react';
 
 export const EventsStreamTab = () => {
     const [events, setEvents] = useState([]);
+    const [schemas, setSchemas] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterSchema, setFilterSchema] = useState('all');
-    const [schemas, setSchemas] = useState([]);
+    const [selectedEvent, setSelectedEvent] = useState(null);
 
     useEffect(() => {
         loadData();
@@ -15,11 +16,9 @@ export const EventsStreamTab = () => {
 
     const loadData = async () => {
         try {
-            // Load schemas for filter dropdown
             const schemasData = await api.getSchemas();
             setSchemas(schemasData);
 
-            // Load all events from all customers
             const customers = await api.getCustomers();
             const allEvents = [];
 
@@ -32,7 +31,6 @@ export const EventsStreamTab = () => {
                 }
             }
 
-            // Sort by timestamp descending
             allEvents.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
             setEvents(allEvents);
         } catch (err) {
@@ -43,11 +41,12 @@ export const EventsStreamTab = () => {
     };
 
     // Filter events
-    const filteredEvents = events.filter(event => {
-        const matchesSearch = event.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const filteredEvents = (events || []).filter(event => {
+        const eventSchemaName = (schemas || []).find(s => s.id === event.eventSchemaId)?.name || event.eventSchemaId || '';
+        const matchesSearch = eventSchemaName.toLowerCase().includes(searchQuery.toLowerCase()) ||
             (event.customerName && event.customerName.toLowerCase().includes(searchQuery.toLowerCase()));
 
-        const matchesSchema = filterSchema === 'all' || event.code === filterSchema;
+        const matchesSchema = filterSchema === 'all' || event.eventSchemaId === filterSchema;
 
         return matchesSearch && matchesSchema;
     });
@@ -87,7 +86,7 @@ export const EventsStreamTab = () => {
                     >
                         <option value="all">All Schemas</option>
                         {schemas.map(schema => (
-                            <option key={schema.id} value={schema.name}>{schema.name}</option>
+                            <option key={schema.id} value={schema.id}>{schema.name}</option>
                         ))}
                     </select>
                 </div>
@@ -107,39 +106,39 @@ export const EventsStreamTab = () => {
                             <thead className="bg-gray-50 border-b border-gray-100">
                                 <tr>
                                     <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Timestamp</th>
-                                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Event Code</th>
+                                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Event ID</th>
+                                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Event Schema</th>
                                     <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Customer</th>
-                                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Properties</th>
+                                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Transaction ID</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
                                 {filteredEvents.map((event, idx) => (
-                                    <tr key={`${event.id}-${idx}`} className="hover:bg-gray-50 transition-colors">
+                                    <tr
+                                        key={`${event.id}-${idx}`}
+                                        onClick={() => setSelectedEvent(event)}
+                                        className="hover:bg-indigo-50 transition-colors cursor-pointer"
+                                    >
                                         <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">
                                             {new Date(event.timestamp).toLocaleString()}
                                         </td>
                                         <td className="px-6 py-4">
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-mono bg-gray-100 text-gray-700">
+                                                {event.id?.substring(0, 8)}...
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">
                                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                                                {event.code}
+                                                {schemas.find(s => s.id === event.eventSchemaId)?.name || 'Unknown'}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-sm text-gray-900">
                                             {event.customerName || event.customerId}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="text-xs text-gray-600 font-mono space-y-1 max-w-md">
-                                                {Object.entries(event.properties || {}).slice(0, 3).map(([k, v]) => (
-                                                    <div key={k} className="flex gap-2">
-                                                        <span className="text-gray-400">{k}:</span>
-                                                        <span className="truncate">{String(v)}</span>
-                                                    </div>
-                                                ))}
-                                                {Object.keys(event.properties || {}).length > 3 && (
-                                                    <div className="text-gray-400 italic">
-                                                        +{Object.keys(event.properties).length - 3} more
-                                                    </div>
-                                                )}
-                                            </div>
+                                            <span className="text-xs font-mono text-gray-600">
+                                                {event.transactionId || '-'}
+                                            </span>
                                         </td>
                                     </tr>
                                 ))}
@@ -152,6 +151,146 @@ export const EventsStreamTab = () => {
                         <p className="text-sm text-gray-500">
                             Showing {filteredEvents.length} event{filteredEvents.length !== 1 ? 's' : ''}
                         </p>
+                    </div>
+                </div>
+            )}
+
+
+            {/* Enhanced Event Detail Modal */}
+            {selectedEvent && (
+                <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex justify-center items-start pt-10">
+                    <div className="relative bg-white rounded-lg shadow-xl w-full max-w-4xl mx-auto max-h-[90vh] overflow-hidden flex flex-col">
+                        {/* Modal Header */}
+                        <div className="flex justify-between items-center p-6 border-b border-gray-200 bg-gray-50">
+                            <div>
+                                <h3 className="text-xl font-semibold text-gray-900">Event Details</h3>
+                                <p className="text-sm text-gray-500 mt-1">Complete information about this event</p>
+                            </div>
+                            <button
+                                onClick={() => setSelectedEvent(null)}
+                                className="text-gray-400 hover:text-gray-600 transition-colors"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
+
+                        {/* Modal Content - Scrollable */}
+                        <div className="overflow-y-auto p-6 space-y-6">
+                            {/* Event Information */}
+                            <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
+                                <h4 className="font-semibold text-indigo-900 mb-3 flex items-center gap-2">
+                                    <span className="w-2 h-2 bg-indigo-600 rounded-full"></span>
+                                    Event Information
+                                </h4>
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <span className="text-gray-600">Event ID:</span>
+                                        <div className="font-mono bg-white px-2 py-1 rounded text-xs mt-1">
+                                            {selectedEvent.id}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span className="text-gray-600">Timestamp:</span>
+                                        <div className="font-medium mt-1">
+                                            {new Date(selectedEvent.timestamp).toLocaleString()}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span className="text-gray-600">Event Schema:</span>
+                                        <div className="font-medium mt-1">
+                                            {(schemas || []).find(s => s.id === selectedEvent.eventSchemaId)?.name || 'Unknown'}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span className="text-gray-600">Transaction ID:</span>
+                                        <div className="font-mono text-xs mt-1">
+                                            {selectedEvent.transactionId || '-'}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Customer Information */}
+                            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                                <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                                    <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
+                                    Customer Information
+                                </h4>
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <span className="text-gray-600">Customer Name:</span>
+                                        <div className="font-medium mt-1">
+                                            {selectedEvent.customerName || '-'}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span className="text-gray-600">Customer ID:</span>
+                                        <div className="font-mono text-xs mt-1">
+                                            {selectedEvent.customerId}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Event Properties */}
+                            <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                                <h4 className="font-semibold text-green-900 mb-3 flex items-center gap-2">
+                                    <span className="w-2 h-2 bg-green-600 rounded-full"></span>
+                                    Event Properties
+                                </h4>
+                                {(() => {
+                                    try {
+                                        const props = typeof selectedEvent.properties === 'string'
+                                            ? JSON.parse(selectedEvent.properties)
+                                            : selectedEvent.properties;
+
+                                        if (!props || Object.keys(props).length === 0) {
+                                            return <p className="text-gray-500 italic text-sm">No properties</p>;
+                                        }
+
+                                        return (
+                                            <div className="space-y-2">
+                                                {Object.entries(props).map(([key, value]) => (
+                                                    <div key={key} className="bg-white rounded p-3 flex justify-between items-center">
+                                                        <span className="font-medium text-gray-700">{key}:</span>
+                                                        <span className="text-gray-900 font-mono text-sm">
+                                                            {JSON.stringify(value)}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        );
+                                    } catch (e) {
+                                        return (
+                                            <pre className="bg-white p-3 rounded-md text-xs overflow-x-auto border border-green-200">
+                                                {JSON.stringify(selectedEvent.properties, null, 2)}
+                                            </pre>
+                                        );
+                                    }
+                                })()}
+                            </div>
+
+                            {/* Raw Event Data */}
+                            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                                    <span className="w-2 h-2 bg-gray-600 rounded-full"></span>
+                                    Raw Event Data (JSON)
+                                </h4>
+                                <pre className="bg-white p-3 rounded-md text-xs overflow-x-auto border border-gray-300 max-h-64">
+                                    {JSON.stringify(selectedEvent, null, 2)}
+                                </pre>
+                            </div>
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="p-6 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
+                            <button
+                                onClick={() => setSelectedEvent(null)}
+                                className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+                            >
+                                Close
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

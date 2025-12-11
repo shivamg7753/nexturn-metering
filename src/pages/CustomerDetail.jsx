@@ -4,6 +4,7 @@ import { useApp } from '../context/store';
 import { ArrowLeft, ChevronRight, Copy, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../api/client';
+import { QuotaUsageCard } from '../components/customers/QuotaUsageCard';
 
 export const CustomerDetail = () => {
   const { id } = useParams();
@@ -363,6 +364,9 @@ export const CustomerDetail = () => {
                 </div>
               </div>
             </div>
+
+            {/* Quota & Usage Card */}
+            <QuotaUsageCard accountId={customer.id} accountName={customer.name} />
           </div>
         </div>
       </div>
