@@ -7,13 +7,14 @@ import TaxCodeSection from './TaxCodeSection'
 import PricingSection from './PricingSection'
 import PreviewPanel from './PreviewPanel'
 import MorePricingOptionsScreen from './MorePricingOptionsScreen'
+import MultiplePricesDisplay from './MultiplePricesDisplay'
 import { getProductCatalogueColors } from './themeUtils'
 
 function AddProductDrawer({ open, onClose, onSubmit, themeMode = 'light', meters = [], editProduct = null }) {
     const isDark = themeMode === 'dark'
     const baseColors = getProductCatalogueColors(isDark)
     const [currentScreen, setCurrentScreen] = useState('basic') // 'basic' | 'pricing'
-    const [advancedPricingData, setAdvancedPricingData] = useState(null)
+    const [editingPriceIndex, setEditingPriceIndex] = useState(null) // Track which price is being edited
 
     const colors = {
         ...baseColors,
@@ -28,6 +29,7 @@ function AddProductDrawer({ open, onClose, onSubmit, themeMode = 'light', meters
         showMoreOptions,
         loading,
         errors,
+        prices,
         updateField,
         updatePreview,
         toggleMoreOptions,
@@ -36,6 +38,10 @@ function AddProductDrawer({ open, onClose, onSubmit, themeMode = 'light', meters
         setLoading,
         calculateTotals,
         setFormData,
+        addPrice,
+        updatePrice,
+        deletePrice,
+        setPrices,
     } = useProductForm()
 
     const totals = calculateTotals()
@@ -56,31 +62,49 @@ function AddProductDrawer({ open, onClose, onSubmit, themeMode = 'light', meters
                 billingPeriod: editProduct.prices?.[0]?.billingPeriod || 'monthly',
             })
 
-            // Set advanced pricing if exists
-            if (editProduct.prices?.[0]) {
-                setAdvancedPricingData(editProduct.prices[0])
+            // Set prices array if exists
+            if (editProduct.prices && editProduct.prices.length > 0) {
+                setPrices(editProduct.prices)
             }
         }
-    }, [editProduct, open, setFormData])
+    }, [editProduct, open, setFormData, setPrices])
 
     const handleClose = () => {
         resetForm()
         setCurrentScreen('basic')
-        setAdvancedPricingData(null)
+        setEditingPriceIndex(null)
         onClose()
     }
 
     const handleMorePricingOptions = () => {
+        setEditingPriceIndex(null) // Creating new price
         setCurrentScreen('pricing')
     }
 
     const handleBackFromPricing = () => {
+        setEditingPriceIndex(null)
         setCurrentScreen('basic')
     }
 
     const handlePricingNext = (pricingData) => {
-        setAdvancedPricingData(pricingData)
+        if (editingPriceIndex !== null) {
+            // Update existing price
+            updatePrice(editingPriceIndex, pricingData)
+        } else {
+            // Add new price
+            addPrice(pricingData)
+        }
+        setEditingPriceIndex(null)
         setCurrentScreen('basic')
+    }
+
+    const handleEditPrice = (index) => {
+        setEditingPriceIndex(index)
+        setCurrentScreen('pricing')
+    }
+
+    const handleDeletePrice = (index) => {
+        deletePrice(index)
     }
 
     const handleSubmit = async () => {
@@ -90,7 +114,7 @@ function AddProductDrawer({ open, onClose, onSubmit, themeMode = 'light', meters
         try {
             const productData = {
                 ...formData,
-                advancedPricing: advancedPricingData,
+                prices: prices.length > 0 ? prices : undefined,
             }
             await onSubmit?.(productData)
             handleClose()
@@ -183,32 +207,14 @@ function AddProductDrawer({ open, onClose, onSubmit, themeMode = 'light', meters
                                     isDark={isDark}
                                 />
 
-                                {/* Pricing Summary Card (only if advanced pricing is configured) */}
-                                {advancedPricingData && (
-                                    <Box sx={{ mt: 3 }}>
-                                        <Typography sx={{
-                                            fontSize: 14,
-                                            fontWeight: 600,
-                                            color: colors.text,
-                                            mb: 2
-                                        }}>
-                                            Pricing configuration
-                                        </Typography>
-                                        <Box sx={{
-                                            p: 2,
-                                            borderRadius: 2,
-                                            border: `1px solid ${colors.border}`,
-                                            bgcolor: colors.bg
-                                        }}>
-                                            <Typography sx={{ fontSize: 13, color: colors.textSecondary }}>
-                                                {advancedPricingData.pricingModel.replace('-', ' ')} • {advancedPricingData.pricingType}
-                                            </Typography>
-                                            <Typography sx={{ fontSize: 14, fontWeight: 700, color: '#7c3aed', mt: 0.5 }}>
-                                                {advancedPricingData.amount ? `₹${advancedPricingData.amount}` : 'Multiple prices'}
-                                            </Typography>
-                                        </Box>
-                                    </Box>
-                                )}
+                                {/* Multiple Prices Display */}
+                                <MultiplePricesDisplay
+                                    prices={prices}
+                                    onEditPrice={handleEditPrice}
+                                    onDeletePrice={handleDeletePrice}
+                                    colors={colors}
+                                    isDark={isDark}
+                                />
                             </Box>
 
                             {/* Right Preview Section */}
@@ -283,9 +289,10 @@ function AddProductDrawer({ open, onClose, onSubmit, themeMode = 'light', meters
                     <MorePricingOptionsScreen
                         onBack={handleBackFromPricing}
                         onNext={handlePricingNext}
-                        initialData={advancedPricingData}
+                        initialData={editingPriceIndex !== null ? prices[editingPriceIndex] : null}
                         meters={meters}
                         themeMode={themeMode}
+                        isEditing={editingPriceIndex !== null}
                     />
                 )}
             </Box>

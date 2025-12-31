@@ -30,6 +30,7 @@ function MorePricingOptionsScreen({
     meters = [],
     themeMode = 'light',
     onCreateMeter,
+    isEditing = false, // New prop to indicate edit mode
 }) {
     const isDark = themeMode === 'dark'
     const baseColors = getProductCatalogueColors(isDark)
@@ -478,7 +479,7 @@ function MorePricingOptionsScreen({
                         },
                     }}
                 >
-                    Next
+                    {isEditing ? 'Update price' : 'Next'}
                 </Button>
             </Box>
         </Box>

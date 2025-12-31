@@ -26,6 +26,7 @@ export function useProductForm() {
     const [showMoreOptions, setShowMoreOptions] = useState(false)
     const [loading, setLoading] = useState(false)
     const [errors, setErrors] = useState({})
+    const [prices, setPrices] = useState([]) // Array of price objects
 
     const updateField = useCallback((field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }))
@@ -43,23 +44,43 @@ export function useProductForm() {
         setShowMoreOptions(prev => !prev)
     }, [])
 
+    // Add a new price to the prices array
+    const addPrice = useCallback((priceData) => {
+        setPrices(prev => [...prev, priceData])
+    }, [])
+
+    // Update an existing price
+    const updatePrice = useCallback((index, priceData) => {
+        setPrices(prev => {
+            const updated = [...prev]
+            updated[index] = priceData
+            return updated
+        })
+    }, [])
+
+    // Delete a price
+    const deletePrice = useCallback((index) => {
+        setPrices(prev => prev.filter((_, i) => i !== index))
+    }, [])
+
     const validate = useCallback(() => {
         const newErrors = {}
         if (!formData.name.trim()) {
             newErrors.name = 'Name is required'
         }
-        if (showMoreOptions && !formData.amount) {
-            newErrors.amount = 'Amount is required'
+        if (showMoreOptions && !formData.amount && prices.length === 0) {
+            newErrors.amount = 'At least one price is required'
         }
         setErrors(newErrors)
         return Object.keys(newErrors).length === 0
-    }, [formData, showMoreOptions])
+    }, [formData, showMoreOptions, prices.length])
 
     const resetForm = useCallback(() => {
         setFormData(initialFormState)
         setPreviewData(initialPreviewState)
         setShowMoreOptions(false)
         setErrors({})
+        setPrices([])
     }, [])
 
     // Calculate preview totals
@@ -84,6 +105,7 @@ export function useProductForm() {
         showMoreOptions,
         loading,
         errors,
+        prices,
         updateField,
         updatePreview,
         toggleMoreOptions,
@@ -92,6 +114,10 @@ export function useProductForm() {
         setLoading,
         calculateTotals,
         setFormData,
+        addPrice,
+        updatePrice,
+        deletePrice,
+        setPrices,
     }
 }
 
