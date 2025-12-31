@@ -3,7 +3,9 @@ import { useState, useCallback } from 'react'
 const initialFormState = {
     name: '',
     description: '',
-    image: null,
+    imageUrl: '',
+    statementDescriptor: '',
+    unitLabel: '',
     taxCode: 'general-electronic',
     pricingType: 'recurring', // 'recurring' | 'one-off'
     amount: '',
@@ -89,6 +91,7 @@ export function useProductForm() {
         resetForm,
         setLoading,
         calculateTotals,
+        setFormData,
     }
 }
 

@@ -14,6 +14,16 @@ const PRICING_MODELS = [
         description: 'Price by package, bundle, or group of units.',
     },
     {
+        value: 'graduated',
+        label: 'Graduated pricing',
+        description: 'Different price for each unit based on quantity tier.',
+    },
+    {
+        value: 'volume',
+        label: 'Volume pricing',
+        description: 'Same price for all units based on total quantity.',
+    },
+    {
         value: 'tiered',
         label: 'Tiered pricing',
         description: 'Offer different price points based on unit quantity.',
@@ -22,6 +32,11 @@ const PRICING_MODELS = [
         value: 'usage-based',
         label: 'Usage-based',
         description: 'Pay-as-you-go billing based on metered usage.',
+    },
+    {
+        value: 'customer-chooses-price',
+        label: 'Customer chooses price',
+        description: 'Let customers decide how much to pay.',
     },
 ]
 

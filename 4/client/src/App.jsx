@@ -8,11 +8,16 @@ import './App.css'
 
 function App() {
   const [activePage, setActivePage] = useState('usage-billing')
-  const [themeMode, setThemeMode] = useState('dark')
+  // Initialize theme from localStorage, default to 'dark' if not set
+  const [themeMode, setThemeMode] = useState(() => {
+    const savedTheme = localStorage.getItem('themeMode')
+    return savedTheme || 'dark'
+  })
 
-  // Update data-theme attribute for CSS variables
+  // Update data-theme attribute for CSS variables and save to localStorage
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', themeMode)
+    localStorage.setItem('themeMode', themeMode)
   }, [themeMode])
 
   const handleThemeToggle = () => {

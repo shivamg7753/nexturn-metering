@@ -71,9 +71,14 @@ app.get('/api/products', async (req, res) => {
         const formattedProducts = products.map(p => ({
             id: p._id,
             name: p.name,
+            description: p.description,
+            imageUrl: p.imageUrl,
+            statementDescriptor: p.statementDescriptor,
+            unitLabel: p.unitLabel,
             pricing: p.pricing,
             taxCategory: p.taxCategory,
             status: p.status,
+            prices: p.prices,
             created: formatDate(p.createdAt),
             updated: formatDate(p.updatedAt)
         }));
@@ -89,7 +94,22 @@ app.get('/api/products/:id', async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
         if (!product) return res.status(404).json({ error: 'Product not found' });
-        res.json(product);
+
+        // Return full product data for editing
+        res.json({
+            id: product._id,
+            name: product.name,
+            description: product.description,
+            imageUrl: product.imageUrl,
+            statementDescriptor: product.statementDescriptor,
+            unitLabel: product.unitLabel,
+            pricing: product.pricing,
+            taxCategory: product.taxCategory,
+            status: product.status,
+            prices: product.prices,
+            created: formatDate(product.createdAt),
+            updated: formatDate(product.updatedAt)
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -98,14 +118,32 @@ app.get('/api/products/:id', async (req, res) => {
 // Create product
 app.post('/api/products', async (req, res) => {
     try {
-        const product = new Product(req.body);
+        const productData = {
+            name: req.body.name,
+            description: req.body.description,
+            imageUrl: req.body.imageUrl,
+            statementDescriptor: req.body.statementDescriptor,
+            unitLabel: req.body.unitLabel,
+            taxCategory: req.body.taxCategory,
+            status: req.body.status || 'active',
+            pricing: req.body.pricing,
+            prices: req.body.prices || []
+        };
+
+        const product = new Product(productData);
         await product.save();
+
         res.status(201).json({
             id: product._id,
             name: product.name,
+            description: product.description,
+            imageUrl: product.imageUrl,
+            statementDescriptor: product.statementDescriptor,
+            unitLabel: product.unitLabel,
             pricing: product.pricing,
             taxCategory: product.taxCategory,
             status: product.status,
+            prices: product.prices,
             created: formatDate(product.createdAt),
             updated: formatDate(product.updatedAt)
         });
@@ -117,14 +155,44 @@ app.post('/api/products', async (req, res) => {
 // Update product
 app.put('/api/products/:id', async (req, res) => {
     try {
-        const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const updateData = {
+            name: req.body.name,
+            description: req.body.description,
+            imageUrl: req.body.imageUrl,
+            statementDescriptor: req.body.statementDescriptor,
+            unitLabel: req.body.unitLabel,
+            taxCategory: req.body.taxCategory,
+            status: req.body.status,
+            pricing: req.body.pricing,
+            prices: req.body.prices
+        };
+
+        // Remove undefined fields
+        Object.keys(updateData).forEach(key => {
+            if (updateData[key] === undefined) {
+                delete updateData[key];
+            }
+        });
+
+        const product = await Product.findByIdAndUpdate(
+            req.params.id,
+            updateData,
+            { new: true, runValidators: true }
+        );
+
         if (!product) return res.status(404).json({ error: 'Product not found' });
+
         res.json({
             id: product._id,
             name: product.name,
+            description: product.description,
+            imageUrl: product.imageUrl,
+            statementDescriptor: product.statementDescriptor,
+            unitLabel: product.unitLabel,
             pricing: product.pricing,
             taxCategory: product.taxCategory,
             status: product.status,
+            prices: product.prices,
             created: formatDate(product.createdAt),
             updated: formatDate(product.updatedAt)
         });

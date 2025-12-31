@@ -1,23 +1,33 @@
 import { useState, useCallback } from 'react'
 
-const initialPricingState = {
-    pricingType: 'recurring', // 'recurring' | 'one-off'
-    pricingModel: 'flat-rate', // 'flat-rate' | 'package' | 'tiered' | 'usage-based'
-    usageType: 'per-unit', // 'per-unit' | 'per-package' | 'per-tier'
-    tierMode: 'volume', // 'volume' | 'graduated'
-    amount: '',
+const initialState = {
+    pricingType: 'recurring',
+    pricingModel: 'flat-rate',
     currency: 'INR',
-    includeTaxInPrice: 'auto',
-    billingPeriod: 'monthly',
+    amount: '',
+
+    // Tiered/Graduated/Volume pricing
+    tiers: [{ upTo: null, unitPrice: '', flatFee: '' }],
+
+    // Usage-based
+    usageType: 'metered',
+    tierMode: 'graduated',
     meter: '',
-    tiers: [
-        { firstUnit: '1', lastUnit: '1', perUnit: '', flatFee: '' },
-        { firstUnit: '2', lastUnit: '∞', perUnit: '', flatFee: '' },
-    ],
+
+    // Package pricing
+    packageSize: '',
+
+    // Customer-chooses-price
+    minimumAmount: '',
+    maximumAmount: '',
+    suggestedAmount: '',
+
+    billingPeriod: 'monthly',
+    includeTaxInPrice: 'auto',
 }
 
 export function useAdvancedPricing() {
-    const [pricingData, setPricingData] = useState(initialPricingState)
+    const [pricingData, setPricingData] = useState(initialState)
     const [errors, setErrors] = useState({})
 
     const updateField = useCallback((field, value) => {
@@ -69,7 +79,7 @@ export function useAdvancedPricing() {
     }, [pricingData])
 
     const reset = useCallback(() => {
-        setPricingData(initialPricingState)
+        setPricingData(initialState)
         setErrors({})
     }, [])
 

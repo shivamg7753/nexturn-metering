@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Box, Typography, Button, Drawer, IconButton, Switch } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import { useProductForm } from '../../hooks/useProductForm'
@@ -9,7 +9,7 @@ import PreviewPanel from './PreviewPanel'
 import MorePricingOptionsScreen from './MorePricingOptionsScreen'
 import { getProductCatalogueColors } from './themeUtils'
 
-function AddProductDrawer({ open, onClose, onSubmit, themeMode = 'light', meters = [] }) {
+function AddProductDrawer({ open, onClose, onSubmit, themeMode = 'light', meters = [], editProduct = null }) {
     const isDark = themeMode === 'dark'
     const baseColors = getProductCatalogueColors(isDark)
     const [currentScreen, setCurrentScreen] = useState('basic') // 'basic' | 'pricing'
@@ -35,9 +35,33 @@ function AddProductDrawer({ open, onClose, onSubmit, themeMode = 'light', meters
         resetForm,
         setLoading,
         calculateTotals,
+        setFormData,
     } = useProductForm()
 
     const totals = calculateTotals()
+
+    // Populate form when editing
+    useEffect(() => {
+        if (editProduct && open) {
+            setFormData({
+                name: editProduct.name || '',
+                description: editProduct.description || '',
+                imageUrl: editProduct.imageUrl || '',
+                statementDescriptor: editProduct.statementDescriptor || '',
+                unitLabel: editProduct.unitLabel || '',
+                taxCode: editProduct.taxCategory === 'General - Electronically Supplied Services'
+                    ? 'general-electronic'
+                    : editProduct.taxCategory || 'general-electronic',
+                amount: editProduct.prices?.[0]?.amount || '',
+                billingPeriod: editProduct.prices?.[0]?.billingPeriod || 'monthly',
+            })
+
+            // Set advanced pricing if exists
+            if (editProduct.prices?.[0]) {
+                setAdvancedPricingData(editProduct.prices[0])
+            }
+        }
+    }, [editProduct, open, setFormData])
 
     const handleClose = () => {
         resetForm()
@@ -105,7 +129,7 @@ function AddProductDrawer({ open, onClose, onSubmit, themeMode = 'light', meters
                         fontWeight: 700,
                         color: colors.text,
                     }}>
-                        Add a product
+                        {editProduct ? 'Edit product' : 'Add a product'}
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -251,7 +275,7 @@ function AddProductDrawer({ open, onClose, onSubmit, themeMode = 'light', meters
                                     },
                                 }}
                             >
-                                {loading ? 'Adding...' : 'Add product'}
+                                {loading ? (editProduct ? 'Updating...' : 'Adding...') : (editProduct ? 'Update product' : 'Add product')}
                             </Button>
                         </Box>
                     </>

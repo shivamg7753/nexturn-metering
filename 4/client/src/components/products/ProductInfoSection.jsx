@@ -1,5 +1,7 @@
-import { Box, Typography, TextField, Button } from '@mui/material'
+import { useState } from 'react'
+import { Box, Typography, TextField, Button, IconButton } from '@mui/material'
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined'
+import CloseIcon from '@mui/icons-material/Close'
 
 function ProductInfoSection({ formData, errors, onFieldChange, colors }) {
     return (
@@ -115,23 +117,148 @@ function ProductInfoSection({ formData, errors, onFieldChange, colors }) {
                 }}>
                     Appears at checkout. JPEG, PNG or WEBP under 2MB.
                 </Typography>
-                <Button
-                    variant="text"
-                    startIcon={<CloudUploadOutlinedIcon sx={{ fontSize: 18 }} />}
+                {formData.imageUrl ? (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box sx={{
+                            flex: 1,
+                            p: 1.5,
+                            borderRadius: 1.5,
+                            border: `1px solid ${colors.border}`,
+                            bgcolor: colors.inputBg,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1
+                        }}>
+                            <Typography sx={{ fontSize: 13, color: colors.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {formData.imageUrl}
+                            </Typography>
+                            <IconButton size="small" onClick={() => onFieldChange('imageUrl', '')} sx={{ color: colors.textSecondary }}>
+                                <CloseIcon fontSize="small" />
+                            </IconButton>
+                        </Box>
+                    </Box>
+                ) : (
+                    <TextField
+                        fullWidth
+                        size="small"
+                        placeholder="Enter image URL"
+                        value={formData.imageUrl}
+                        onChange={(e) => onFieldChange('imageUrl', e.target.value)}
+                        sx={{
+                            '& .MuiOutlinedInput-root': {
+                                bgcolor: colors.inputBg,
+                                borderRadius: 1.5,
+                                '& fieldset': {
+                                    borderColor: colors.border,
+                                },
+                                '&:hover fieldset': {
+                                    borderColor: '#7c3aed',
+                                },
+                                '&.Mui-focused fieldset': {
+                                    borderColor: '#7c3aed',
+                                },
+                            },
+                            '& .MuiInputBase-input': {
+                                color: colors.text,
+                                fontSize: 14,
+                            },
+                        }}
+                    />
+                )}
+            </Box>
+
+            {/* Statement Descriptor */}
+            <Box sx={{ mb: 3 }}>
+                <Typography sx={{
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: colors.text,
+                    mb: 0.5
+                }}>
+                    Statement descriptor
+                </Typography>
+                <Typography sx={{
+                    fontSize: 12,
+                    color: colors.textSecondary,
+                    mb: 1
+                }}>
+                    Extra information about a product which will appear on your customer's credit card statement.
+                </Typography>
+                <TextField
+                    fullWidth
+                    size="small"
+                    placeholder="Enter statement descriptor"
+                    value={formData.statementDescriptor}
+                    onChange={(e) => onFieldChange('statementDescriptor', e.target.value)}
+                    inputProps={{ maxLength: 22 }}
                     sx={{
-                        color: colors.textSecondary,
-                        textTransform: 'none',
-                        fontSize: 13,
-                        fontWeight: 500,
-                        px: 0,
-                        '&:hover': {
-                            bgcolor: 'transparent',
-                            color: '#7c3aed',
+                        '& .MuiOutlinedInput-root': {
+                            bgcolor: colors.inputBg,
+                            borderRadius: 1.5,
+                            '& fieldset': {
+                                borderColor: colors.border,
+                            },
+                            '&:hover fieldset': {
+                                borderColor: '#7c3aed',
+                            },
+                            '&.Mui-focused fieldset': {
+                                borderColor: '#7c3aed',
+                            },
+                        },
+                        '& .MuiInputBase-input': {
+                            color: colors.text,
+                            fontSize: 14,
                         },
                     }}
-                >
-                    Upload
-                </Button>
+                />
+                <Typography sx={{ fontSize: 11, color: colors.textSecondary, mt: 0.5 }}>
+                    {formData.statementDescriptor.length}/22 characters
+                </Typography>
+            </Box>
+
+            {/* Unit Label */}
+            <Box sx={{ mb: 3 }}>
+                <Typography sx={{
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: colors.text,
+                    mb: 0.5
+                }}>
+                    Unit label
+                </Typography>
+                <Typography sx={{
+                    fontSize: 12,
+                    color: colors.textSecondary,
+                    mb: 1
+                }}>
+                    Describes how you sell your product (e.g., "seat", "user", "GB"). Appears in invoices and receipts.
+                </Typography>
+                <TextField
+                    fullWidth
+                    size="small"
+                    placeholder="e.g., seat, user, GB"
+                    value={formData.unitLabel}
+                    onChange={(e) => onFieldChange('unitLabel', e.target.value)}
+                    sx={{
+                        '& .MuiOutlinedInput-root': {
+                            bgcolor: colors.inputBg,
+                            borderRadius: 1.5,
+                            '& fieldset': {
+                                borderColor: colors.border,
+                            },
+                            '&:hover fieldset': {
+                                borderColor: '#7c3aed',
+                            },
+                            '&.Mui-focused fieldset': {
+                                borderColor: '#7c3aed',
+                            },
+                        },
+                        '& .MuiInputBase-input': {
+                            color: colors.text,
+                            fontSize: 14,
+                        },
+                    }}
+                />
             </Box>
         </Box>
     )

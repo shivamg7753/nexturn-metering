@@ -6,10 +6,13 @@ import {
     PricingModelSelector,
     UsageTypeSelector,
     TieredPricingTable,
+    GraduatedPricingTable,
+    VolumePricingTable,
     UsageMeterSection,
     FlatRatePriceSection,
     SelectedMeterDisplay,
     AdvancedPriceSection,
+    CustomerChoosesPriceSection,
 } from './pricing'
 import PreviewPanel from './PreviewPanel'
 import { getProductCatalogueColors } from './themeUtils'
@@ -87,6 +90,131 @@ function MorePricingOptionsScreen({
                         onTaxChange={(v) => updateField('includeTaxInPrice', v)}
                         colors={colors}
                     />
+                )
+
+            case 'graduated':
+                return (
+                    <>
+                        <GraduatedPricingTable
+                            tiers={pricingData.tiers}
+                            currency={pricingData.currency}
+                            onTiersChange={updateTiers}
+                            onCurrencyChange={(v) => updateField('currency', v)}
+                            onAddTier={addTier}
+                            onRemoveTier={removeTier}
+                            colors={colors}
+                        />
+
+                        <Box sx={{ mb: 3 }}>
+                            <Typography sx={{
+                                fontSize: 14,
+                                fontWeight: 600,
+                                color: colors.text,
+                                mb: 1,
+                            }}>
+                                Include tax in price
+                            </Typography>
+                            <FormControl fullWidth size="small">
+                                <Select
+                                    value={pricingData.includeTaxInPrice}
+                                    onChange={(e) => updateField('includeTaxInPrice', e.target.value)}
+                                    sx={{
+                                        bgcolor: colors.inputBg,
+                                        borderRadius: 1.5,
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.border },
+                                        '& .MuiSelect-select': { color: colors.text, fontSize: 14 },
+                                    }}
+                                >
+                                    {TAX_OPTIONS.map(opt => (
+                                        <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Box>
+
+                        <AdvancedPriceSection
+                            priceDescription={advancedData.priceDescription}
+                            lookupKey={advancedData.lookupKey}
+                            onPriceDescriptionChange={(v) => setAdvancedData(prev => ({ ...prev, priceDescription: v }))}
+                            onLookupKeyChange={(v) => setAdvancedData(prev => ({ ...prev, lookupKey: v }))}
+                            colors={colors}
+                        />
+                    </>
+                )
+
+            case 'volume':
+                return (
+                    <>
+                        <VolumePricingTable
+                            tiers={pricingData.tiers}
+                            currency={pricingData.currency}
+                            onTiersChange={updateTiers}
+                            onCurrencyChange={(v) => updateField('currency', v)}
+                            onAddTier={addTier}
+                            onRemoveTier={removeTier}
+                            colors={colors}
+                        />
+
+                        <Box sx={{ mb: 3 }}>
+                            <Typography sx={{
+                                fontSize: 14,
+                                fontWeight: 600,
+                                color: colors.text,
+                                mb: 1,
+                            }}>
+                                Include tax in price
+                            </Typography>
+                            <FormControl fullWidth size="small">
+                                <Select
+                                    value={pricingData.includeTaxInPrice}
+                                    onChange={(e) => updateField('includeTaxInPrice', e.target.value)}
+                                    sx={{
+                                        bgcolor: colors.inputBg,
+                                        borderRadius: 1.5,
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.border },
+                                        '& .MuiSelect-select': { color: colors.text, fontSize: 14 },
+                                    }}
+                                >
+                                    {TAX_OPTIONS.map(opt => (
+                                        <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Box>
+
+                        <AdvancedPriceSection
+                            priceDescription={advancedData.priceDescription}
+                            lookupKey={advancedData.lookupKey}
+                            onPriceDescriptionChange={(v) => setAdvancedData(prev => ({ ...prev, priceDescription: v }))}
+                            onLookupKeyChange={(v) => setAdvancedData(prev => ({ ...prev, lookupKey: v }))}
+                            colors={colors}
+                        />
+                    </>
+                )
+
+            case 'customer-chooses-price':
+                return (
+                    <>
+                        <CustomerChoosesPriceSection
+                            minimumAmount={pricingData.minimumAmount}
+                            maximumAmount={pricingData.maximumAmount}
+                            suggestedAmount={pricingData.suggestedAmount}
+                            currency={pricingData.currency}
+                            onMinimumChange={(v) => updateField('minimumAmount', v)}
+                            onMaximumChange={(v) => updateField('maximumAmount', v)}
+                            onSuggestedChange={(v) => updateField('suggestedAmount', v)}
+                            onCurrencyChange={(v) => updateField('currency', v)}
+                            colors={colors}
+                        />
+
+                        <AdvancedPriceSection
+                            priceDescription={advancedData.priceDescription}
+                            lookupKey={advancedData.lookupKey}
+                            onPriceDescriptionChange={(v) => setAdvancedData(prev => ({ ...prev, priceDescription: v }))}
+                            onLookupKeyChange={(v) => setAdvancedData(prev => ({ ...prev, lookupKey: v }))}
+                            colors={colors}
+                        />
+                    </>
                 )
 
             case 'tiered':
