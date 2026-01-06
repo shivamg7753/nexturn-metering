@@ -3,6 +3,7 @@ import Layout from './components/Layout'
 import HomePage from './pages/HomePage'
 import UsageBillingPage from './pages/UsageBillingPage'
 import ProductCataloguePage from './pages/ProductCataloguePage'
+import CustomersPage from './pages/CustomersPage'
 import PlaceholderPage from './pages/PlaceholderPage'
 import './App.css'
 
@@ -33,7 +34,7 @@ function App() {
       case 'transactions':
         return <PlaceholderPage title="Transactions" description="View transaction history" themeMode={themeMode} />
       case 'customers':
-        return <PlaceholderPage title="Customers" description="Manage your customers" themeMode={themeMode} />
+        return <CustomersPage themeMode={themeMode} />
       case 'products':
         return <ProductCataloguePage themeMode={themeMode} />
       case 'revenue':

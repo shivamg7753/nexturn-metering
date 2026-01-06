@@ -4,6 +4,7 @@ import cors from 'cors';
 import mongoose from 'mongoose';
 import Product from './models/Product.js';
 import Meter from './models/Meter.js';
+import Customer from './models/Customer.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -288,6 +289,124 @@ app.delete('/api/meters/:id', async (req, res) => {
     try {
         const meter = await Meter.findByIdAndDelete(req.params.id);
         if (!meter) return res.status(404).json({ error: 'Meter not found' });
+        res.status(204).send();
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ========== CUSTOMER ROUTES ==========
+
+// Get all customers
+app.get('/api/customers', async (req, res) => {
+    try {
+        const customers = await Customer.find().sort({ createdAt: -1 });
+        const formattedCustomers = customers.map(c => ({
+            id: c._id,
+            name: c.name,
+            email: c.email,
+            language: c.language,
+            paymentMethod: c.paymentMethod,
+            createdAt: c.createdAt,
+            updatedAt: c.updatedAt
+        }));
+        res.json(formattedCustomers);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get single customer
+app.get('/api/customers/:id', async (req, res) => {
+    try {
+        const customer = await Customer.findById(req.params.id);
+        if (!customer) return res.status(404).json({ error: 'Customer not found' });
+
+        res.json({
+            id: customer._id,
+            name: customer.name,
+            email: customer.email,
+            language: customer.language,
+            paymentMethod: customer.paymentMethod,
+            createdAt: customer.createdAt,
+            updatedAt: customer.updatedAt
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Create customer
+app.post('/api/customers', async (req, res) => {
+    try {
+        const customerData = {
+            name: req.body.name,
+            email: req.body.email,
+            language: req.body.language || 'English (United States)',
+            paymentMethod: req.body.paymentMethod || null
+        };
+
+        const customer = new Customer(customerData);
+        await customer.save();
+
+        res.status(201).json({
+            id: customer._id,
+            name: customer.name,
+            email: customer.email,
+            language: customer.language,
+            paymentMethod: customer.paymentMethod,
+            createdAt: customer.createdAt,
+            updatedAt: customer.updatedAt
+        });
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// Update customer
+app.put('/api/customers/:id', async (req, res) => {
+    try {
+        const updateData = {
+            name: req.body.name,
+            email: req.body.email,
+            language: req.body.language,
+            paymentMethod: req.body.paymentMethod
+        };
+
+        // Remove undefined fields
+        Object.keys(updateData).forEach(key => {
+            if (updateData[key] === undefined) {
+                delete updateData[key];
+            }
+        });
+
+        const customer = await Customer.findByIdAndUpdate(
+            req.params.id,
+            updateData,
+            { new: true, runValidators: true }
+        );
+
+        if (!customer) return res.status(404).json({ error: 'Customer not found' });
+
+        res.json({
+            id: customer._id,
+            name: customer.name,
+            email: customer.email,
+            language: customer.language,
+            paymentMethod: customer.paymentMethod,
+            createdAt: customer.createdAt,
+            updatedAt: customer.updatedAt
+        });
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// Delete customer
+app.delete('/api/customers/:id', async (req, res) => {
+    try {
+        const customer = await Customer.findByIdAndDelete(req.params.id);
+        if (!customer) return res.status(404).json({ error: 'Customer not found' });
         res.status(204).send();
     } catch (err) {
         res.status(500).json({ error: err.message });
