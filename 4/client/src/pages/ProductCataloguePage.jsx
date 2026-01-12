@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Box, LinearProgress, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material'
 import { useProducts } from '../hooks/useProducts'
 import { useMeters } from '../hooks/useMeters'
+import { useMeterForm } from '../hooks/useMeterForm'
 import {
     PageHeader,
     NavigationTabs,
@@ -11,13 +12,15 @@ import {
     Pagination,
     AddProductDrawer,
 } from '../components/products'
+import MeterFormDrawer from '../components/meters/MeterFormDrawer'
 import { getProductCatalogueColors } from '../components/products/themeUtils'
 
 const ROWS_PER_PAGE = 10
 
 function ProductCataloguePage({ themeMode }) {
     const { products, loading, statusFilter, setStatusFilter, counts, fetchProducts } = useProducts()
-    const { meters } = useMeters()
+    const { meters, createMeter } = useMeters()
+    const meterForm = useMeterForm()
     const [activeTab, setActiveTab] = useState(0)
     const [page, setPage] = useState(1)
     const [drawerOpen, setDrawerOpen] = useState(false)
@@ -221,6 +224,7 @@ function ProductCataloguePage({ themeMode }) {
                 themeMode={themeMode}
                 meters={meters}
                 editProduct={editingProduct}
+                onCreateMeter={meterForm.openCreateForm}
             />
 
             {/* Delete Confirmation Dialog */}
@@ -277,6 +281,29 @@ function ProductCataloguePage({ themeMode }) {
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            {/* Meter Form Drawer */}
+            <MeterFormDrawer
+                open={meterForm.showCreateForm}
+                onClose={meterForm.closeForm}
+                editingMeter={meterForm.editingMeter}
+                newMeter={meterForm.newMeter}
+                showAdvanced={meterForm.showAdvanced}
+                exampleUsage={meterForm.exampleUsage}
+                preview={meterForm.calculatePreview()}
+                onUpdateField={meterForm.updateMeterField}
+                onToggleAdvanced={meterForm.toggleAdvanced}
+                onRemoveExampleUsage={meterForm.removeExampleUsage}
+                onSubmit={async () => {
+                    const meterData = meterForm.getMeterData()
+                    const result = await createMeter(meterData)
+                    if (result.success) {
+                        meterForm.closeForm()
+                    }
+                }}
+                isFormValid={meterForm.isFormValid}
+                themeMode={themeMode}
+            />
         </Box>
     )
 }

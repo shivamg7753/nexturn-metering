@@ -10,6 +10,7 @@ import {
     VolumePricingTable,
     UsageMeterSection,
     FlatRatePriceSection,
+    PackagePricingSection,
     SelectedMeterDisplay,
     AdvancedPriceSection,
     CustomerChoosesPriceSection,
@@ -219,6 +220,68 @@ function MorePricingOptionsScreen({
                 )
 
             case 'tiered':
+                return (
+                    <>
+                        {/* Show Volume or Graduated pricing table based on tieredType */}
+                        {pricingData.tieredType === 'volume' ? (
+                            <VolumePricingTable
+                                tiers={pricingData.tiers}
+                                currency={pricingData.currency}
+                                onTiersChange={updateTiers}
+                                onCurrencyChange={(v) => updateField('currency', v)}
+                                onAddTier={addTier}
+                                onRemoveTier={removeTier}
+                                colors={colors}
+                            />
+                        ) : (
+                            <GraduatedPricingTable
+                                tiers={pricingData.tiers}
+                                currency={pricingData.currency}
+                                onTiersChange={updateTiers}
+                                onCurrencyChange={(v) => updateField('currency', v)}
+                                onAddTier={addTier}
+                                onRemoveTier={removeTier}
+                                colors={colors}
+                            />
+                        )}
+
+                        <Box sx={{ mb: 3 }}>
+                            <Typography sx={{
+                                fontSize: 14,
+                                fontWeight: 600,
+                                color: colors.text,
+                                mb: 1,
+                            }}>
+                                Include tax in price
+                            </Typography>
+                            <FormControl fullWidth size="small">
+                                <Select
+                                    value={pricingData.includeTaxInPrice}
+                                    onChange={(e) => updateField('includeTaxInPrice', e.target.value)}
+                                    sx={{
+                                        bgcolor: colors.inputBg,
+                                        borderRadius: 1.5,
+                                        '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.border },
+                                        '& .MuiSelect-select': { color: colors.text, fontSize: 14 },
+                                    }}
+                                >
+                                    {TAX_OPTIONS.map(opt => (
+                                        <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Box>
+
+                        <AdvancedPriceSection
+                            priceDescription={advancedData.priceDescription}
+                            lookupKey={advancedData.lookupKey}
+                            onPriceDescriptionChange={(v) => setAdvancedData(prev => ({ ...prev, priceDescription: v }))}
+                            onLookupKeyChange={(v) => setAdvancedData(prev => ({ ...prev, lookupKey: v }))}
+                            colors={colors}
+                        />
+                    </>
+                )
+
             case 'usage-based':
                 return (
                     <>
@@ -231,30 +294,8 @@ function MorePricingOptionsScreen({
                             />
                         )}
 
-                        {/* Meter selection if none chosen */}
-                        {!pricingData.meter && (
-                            <UsageTypeSelector
-                                usageType={pricingData.usageType}
-                                tierMode={pricingData.tierMode}
-                                onUsageTypeChange={(v) => updateField('usageType', v)}
-                                onTierModeChange={(v) => updateField('tierMode', v)}
-                                colors={colors}
-                            />
-                        )}
-
-                        {pricingData.usageType === 'per-tier' && (
-                            <TieredPricingTable
-                                tiers={pricingData.tiers}
-                                currency={pricingData.currency}
-                                onTiersChange={updateTiers}
-                                onCurrencyChange={(v) => updateField('currency', v)}
-                                onAddTier={addTier}
-                                onRemoveTier={removeTier}
-                                colors={colors}
-                            />
-                        )}
-
-                        {pricingData.usageType !== 'per-tier' && (
+                        {/* Per unit - Shows flat rate price section */}
+                        {pricingData.usageType === 'per-unit' && (
                             <FlatRatePriceSection
                                 amount={pricingData.amount}
                                 currency={pricingData.currency}
@@ -266,57 +307,77 @@ function MorePricingOptionsScreen({
                             />
                         )}
 
-                        {/* Include Tax for tiered */}
+                        {/* Per package - Shows package pricing section */}
+                        {pricingData.usageType === 'per-package' && (
+                            <PackagePricingSection
+                                amount={pricingData.amount}
+                                currency={pricingData.currency}
+                                packageQuantity={pricingData.packageQuantity}
+                                includeTaxInPrice={pricingData.includeTaxInPrice}
+                                onAmountChange={(v) => updateField('amount', v)}
+                                onCurrencyChange={(v) => updateField('currency', v)}
+                                onPackageQuantityChange={(v) => updateField('packageQuantity', v)}
+                                onTaxChange={(v) => updateField('includeTaxInPrice', v)}
+                                colors={colors}
+                            />
+                        )}
+
+                        {/* Per tier - Shows Volume or Graduated pricing table based on tieredType */}
                         {pricingData.usageType === 'per-tier' && (
-                            <Box sx={{ mb: 3 }}>
-                                <Typography sx={{
-                                    fontSize: 14,
-                                    fontWeight: 600,
-                                    color: colors.text,
-                                    mb: 1,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 0.5,
-                                }}>
-                                    Include tax in price
-                                    <Box
-                                        component="span"
-                                        sx={{
-                                            width: 14,
-                                            height: 14,
-                                            borderRadius: '50%',
-                                            border: `1px solid ${colors.textSecondary}`,
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            fontSize: 10,
-                                            color: colors.textSecondary,
-                                        }}
-                                    >
-                                        ?
-                                    </Box>
-                                </Typography>
-                                <FormControl fullWidth size="small">
-                                    <Select
-                                        value={pricingData.includeTaxInPrice}
-                                        onChange={(e) => updateField('includeTaxInPrice', e.target.value)}
-                                        sx={{
-                                            bgcolor: colors.inputBg,
-                                            borderRadius: 1.5,
-                                            '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.border },
-                                            '& .MuiSelect-select': { color: colors.text, fontSize: 14 },
-                                        }}
-                                    >
-                                        {TAX_OPTIONS.map(opt => (
-                                            <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
-                            </Box>
+                            <>
+                                {pricingData.tieredType === 'volume' ? (
+                                    <VolumePricingTable
+                                        tiers={pricingData.tiers}
+                                        currency={pricingData.currency}
+                                        onTiersChange={updateTiers}
+                                        onCurrencyChange={(v) => updateField('currency', v)}
+                                        onAddTier={addTier}
+                                        onRemoveTier={removeTier}
+                                        colors={colors}
+                                    />
+                                ) : (
+                                    <GraduatedPricingTable
+                                        tiers={pricingData.tiers}
+                                        currency={pricingData.currency}
+                                        onTiersChange={updateTiers}
+                                        onCurrencyChange={(v) => updateField('currency', v)}
+                                        onAddTier={addTier}
+                                        onRemoveTier={removeTier}
+                                        colors={colors}
+                                    />
+                                )}
+
+                                <Box sx={{ mb: 3 }}>
+                                    <Typography sx={{
+                                        fontSize: 14,
+                                        fontWeight: 600,
+                                        color: colors.text,
+                                        mb: 1,
+                                    }}>
+                                        Include tax in price
+                                    </Typography>
+                                    <FormControl fullWidth size="small">
+                                        <Select
+                                            value={pricingData.includeTaxInPrice}
+                                            onChange={(e) => updateField('includeTaxInPrice', e.target.value)}
+                                            sx={{
+                                                bgcolor: colors.inputBg,
+                                                borderRadius: 1.5,
+                                                '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.border },
+                                                '& .MuiSelect-select': { color: colors.text, fontSize: 14 },
+                                            }}
+                                        >
+                                            {TAX_OPTIONS.map(opt => (
+                                                <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                </Box>
+                            </>
                         )}
 
                         {/* Usage Meter Section (only when not already selected) */}
-                        {pricingData.pricingModel === 'usage-based' && !pricingData.meter && (
+                        {!pricingData.meter && (
                             <UsageMeterSection
                                 meter={pricingData.meter}
                                 billingPeriod={pricingData.billingPeriod}
@@ -375,12 +436,14 @@ function MorePricingOptionsScreen({
 
             case 'package':
                 return (
-                    <FlatRatePriceSection
+                    <PackagePricingSection
                         amount={pricingData.amount}
                         currency={pricingData.currency}
+                        packageQuantity={pricingData.packageQuantity}
                         includeTaxInPrice={pricingData.includeTaxInPrice}
                         onAmountChange={(v) => updateField('amount', v)}
                         onCurrencyChange={(v) => updateField('currency', v)}
+                        onPackageQuantityChange={(v) => updateField('packageQuantity', v)}
                         onTaxChange={(v) => updateField('includeTaxInPrice', v)}
                         colors={colors}
                     />
@@ -409,6 +472,10 @@ function MorePricingOptionsScreen({
                 <PricingModelSelector
                     pricingModel={pricingData.pricingModel}
                     onPricingModelChange={(v) => updateField('pricingModel', v)}
+                    tieredType={pricingData.tieredType}
+                    onTieredTypeChange={(v) => updateField('tieredType', v)}
+                    usageType={pricingData.usageType}
+                    onUsageTypeChange={(v) => updateField('usageType', v)}
                     colors={colors}
                 />
 

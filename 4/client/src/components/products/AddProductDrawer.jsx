@@ -10,7 +10,7 @@ import MorePricingOptionsScreen from './MorePricingOptionsScreen'
 import MultiplePricesDisplay from './MultiplePricesDisplay'
 import { getProductCatalogueColors } from './themeUtils'
 
-function AddProductDrawer({ open, onClose, onSubmit, themeMode = 'light', meters = [], editProduct = null }) {
+function AddProductDrawer({ open, onClose, onSubmit, themeMode = 'light', meters = [], editProduct = null, onCreateMeter }) {
     const isDark = themeMode === 'dark'
     const baseColors = getProductCatalogueColors(isDark)
     const [currentScreen, setCurrentScreen] = useState('basic') // 'basic' | 'pricing'
@@ -292,6 +292,7 @@ function AddProductDrawer({ open, onClose, onSubmit, themeMode = 'light', meters
                         initialData={editingPriceIndex !== null ? prices[editingPriceIndex] : null}
                         meters={meters}
                         themeMode={themeMode}
+                        onCreateMeter={onCreateMeter}
                         isEditing={editingPriceIndex !== null}
                     />
                 )}

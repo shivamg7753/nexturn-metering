@@ -20,31 +20,34 @@ function GraduatedPricingTable({ tiers, currency, onTiersChange, onCurrencyChang
 
     return (
         <Box sx={{ mb: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography sx={{
-                    fontSize: 14,
-                    fontWeight: 600,
-                    color: colors.text,
-                }}>
-                    Graduated pricing tiers
-                </Typography>
-                <FormControl size="small" sx={{ minWidth: 120 }}>
-                    <Select
-                        value={currency}
-                        onChange={(e) => onCurrencyChange(e.target.value)}
-                        sx={{
-                            bgcolor: colors.inputBg,
-                            borderRadius: 1.5,
-                            '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.border },
-                            '& .MuiSelect-select': { color: colors.text, fontSize: 14, py: 0.75 },
-                        }}
-                    >
-                        {CURRENCIES.map(curr => (
-                            <MenuItem key={curr.value} value={curr.value}>{curr.label}</MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
-            </Box>
+            <Typography sx={{
+                fontSize: 16,
+                fontWeight: 700,
+                color: colors.text,
+                mb: 2
+            }}>
+                Price
+            </Typography>
+
+            {/* Currency Selector */}
+            <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+                <Select
+                    value={currency}
+                    onChange={(e) => onCurrencyChange(e.target.value)}
+                    sx={{
+                        bgcolor: colors.inputBg,
+                        borderRadius: 1.5,
+                        '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.border },
+                        '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#7c3aed' },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#7c3aed' },
+                        '& .MuiSelect-select': { color: colors.text, fontSize: 14 },
+                    }}
+                >
+                    {CURRENCIES.map(curr => (
+                        <MenuItem key={curr.value} value={curr.value}>{curr.label}</MenuItem>
+                    ))}
+                </Select>
+            </FormControl>
 
             <Typography sx={{ fontSize: 12, color: colors.textSecondary, mb: 2 }}>
                 Charge different prices for different quantity ranges. Each unit is priced at the tier it falls into.

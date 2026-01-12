@@ -11,6 +11,11 @@ function TieredPricingTable({ tiers, currency, onTiersChange, onCurrencyChange, 
         onTiersChange(newTiers)
     }
 
+    const getCurrencySymbol = (curr) => {
+        const symbols = { INR: '₹', USD: '$', EUR: '€', GBP: '£', CAD: '$', AUD: '$' }
+        return symbols[curr] || '$'
+    }
+
     return (
         <Box sx={{ mb: 3 }}>
             <Typography sx={{
@@ -23,7 +28,7 @@ function TieredPricingTable({ tiers, currency, onTiersChange, onCurrencyChange, 
             </Typography>
 
             {/* Currency Selector */}
-            <FormControl size="small" sx={{ mb: 2, minWidth: 120 }}>
+            <FormControl fullWidth size="small" sx={{ mb: 2 }}>
                 <Select
                     value={currency}
                     onChange={(e) => onCurrencyChange(e.target.value)}
@@ -32,6 +37,12 @@ function TieredPricingTable({ tiers, currency, onTiersChange, onCurrencyChange, 
                         borderRadius: 1.5,
                         '& .MuiOutlinedInput-notchedOutline': {
                             borderColor: colors.border,
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#7c3aed',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#7c3aed',
                         },
                         '& .MuiSelect-select': {
                             color: colors.text,
@@ -122,7 +133,7 @@ function TieredPricingTable({ tiers, currency, onTiersChange, onCurrencyChange, 
                         InputProps={{
                             startAdornment: (
                                 <Typography sx={{ color: colors.textSecondary, mr: 0.5, fontSize: 13 }}>
-                                    ₹
+                                    {getCurrencySymbol(currency)}
                                 </Typography>
                             ),
                         }}
@@ -149,7 +160,7 @@ function TieredPricingTable({ tiers, currency, onTiersChange, onCurrencyChange, 
                         InputProps={{
                             startAdornment: (
                                 <Typography sx={{ color: colors.textSecondary, mr: 0.5, fontSize: 13 }}>
-                                    ₹
+                                    {getCurrencySymbol(currency)}
                                 </Typography>
                             ),
                         }}

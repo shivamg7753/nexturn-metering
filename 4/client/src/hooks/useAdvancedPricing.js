@@ -6,6 +6,9 @@ const initialState = {
     currency: 'INR',
     amount: '',
 
+    // Tiered pricing type (volume or graduated)
+    tieredType: 'graduated',
+
     // Tiered/Graduated/Volume pricing
     tiers: [{ upTo: null, unitPrice: '', flatFee: '' }],
 
@@ -15,7 +18,7 @@ const initialState = {
     meter: '',
 
     // Package pricing
-    packageSize: '',
+    packageQuantity: '',
 
     // Customer-chooses-price
     minimumAmount: '',
