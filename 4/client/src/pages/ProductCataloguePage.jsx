@@ -17,7 +17,7 @@ import { getProductCatalogueColors } from '../components/products/themeUtils'
 
 const ROWS_PER_PAGE = 10
 
-function ProductCataloguePage({ themeMode }) {
+function ProductCataloguePage({ themeMode, onNavigateToProduct }) {
     const { products, loading, statusFilter, setStatusFilter, counts, fetchProducts } = useProducts()
     const { meters, createMeter } = useMeters()
     const meterForm = useMeterForm()
@@ -204,6 +204,7 @@ function ProductCataloguePage({ themeMode }) {
                 colors={colors}
                 isDark={isDark}
                 onProductAction={handleProductAction}
+                onProductClick={onNavigateToProduct}
                 onEditProduct={handleEditProduct}
                 onDeleteProduct={handleDeleteProduct}
             />

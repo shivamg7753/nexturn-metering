@@ -6,6 +6,8 @@ import Product from './models/Product.js';
 import Meter from './models/Meter.js';
 import Customer from './models/Customer.js';
 import Subscription from './models/Subscription.js';
+import Log from './models/Log.js';
+import Event from './models/Event.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -27,6 +29,34 @@ const formatDate = (date) => {
     return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 };
 
+// Helper: Create Log
+const createLog = async (resourceId, resourceType, method, endpoint, statusCode) => {
+    try {
+        await Log.create({
+            resourceId,
+            resourceType,
+            method,
+            endpoint,
+            statusCode
+        });
+    } catch (err) {
+        console.error('Error creating log:', err);
+    }
+};
+
+// Helper: Create Event
+const createEvent = async (resourceId, resourceType, description) => {
+    try {
+        await Event.create({
+            resourceId,
+            resourceType,
+            description
+        });
+    } catch (err) {
+        console.error('Error creating event:', err);
+    }
+};
+
 // Health endpoint
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -45,6 +75,8 @@ app.delete('/api/meters/all/clear', async (req, res) => {
 app.delete('/api/products/all/clear', async (req, res) => {
     try {
         await Product.deleteMany({});
+        await Log.deleteMany({ resourceType: 'product' });
+        await Event.deleteMany({ resourceType: 'product' });
         res.json({ message: 'All products cleared' });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -117,6 +149,37 @@ app.get('/api/products/:id', async (req, res) => {
     }
 });
 
+// Get product logs
+app.get('/api/products/:id/logs', async (req, res) => {
+    try {
+        const logs = await Log.find({ resourceId: req.params.id, resourceType: 'product' })
+            .sort({ createdAt: -1 })
+            .limit(10);
+        res.json(logs);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get product events
+app.get('/api/products/:id/events', async (req, res) => {
+    try {
+        const events = await Event.find({ resourceId: req.params.id, resourceType: 'product' })
+            .sort({ createdAt: -1 })
+            .limit(10);
+
+        const formattedEvents = events.map(e => ({
+            text: e.description,
+            time: new Date(e.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+            date: new Date(e.createdAt).toLocaleDateString('en-GB', { month: 'numeric', day: 'numeric', year: '2-digit' })
+        }));
+
+        res.json(formattedEvents);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Create product
 app.post('/api/products', async (req, res) => {
     try {
@@ -134,6 +197,10 @@ app.post('/api/products', async (req, res) => {
 
         const product = new Product(productData);
         await product.save();
+
+        // Log and Event
+        await createLog(product._id, 'product', 'POST', '/api/products', 201);
+        await createEvent(product._id, 'product', `A product with ID ${product._id} was created`);
 
         res.status(201).json({
             id: product._id,
@@ -184,6 +251,10 @@ app.put('/api/products/:id', async (req, res) => {
 
         if (!product) return res.status(404).json({ error: 'Product not found' });
 
+        // Log and Event
+        await createLog(product._id, 'product', 'POST', `/api/products/${product._id}`, 200); // Using POST as per mock, typically PUT
+        await createEvent(product._id, 'product', `A product with ID ${product._id} was updated`);
+
         res.json({
             id: product._id,
             name: product.name,
@@ -208,6 +279,10 @@ app.delete('/api/products/:id', async (req, res) => {
     try {
         const product = await Product.findByIdAndDelete(req.params.id);
         if (!product) return res.status(404).json({ error: 'Product not found' });
+
+        // Log (Note: Events are usually tied to existing resources, but we can log the deletion)
+        await createLog(product._id, 'product', 'DELETE', `/api/products/${product._id}`, 200);
+
         res.status(204).send();
     } catch (err) {
         res.status(500).json({ error: err.message });

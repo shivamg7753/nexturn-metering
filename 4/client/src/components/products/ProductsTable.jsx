@@ -21,32 +21,40 @@ import RefreshIcon from '@mui/icons-material/Refresh'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 
-function ProductsTable({ products, colors, isDark, onProductAction, onEditProduct, onDeleteProduct }) {
+function ProductsTable({ products, colors, isDark, onProductAction, onProductClick, onEditProduct, onDeleteProduct }) {
     const [anchorEl, setAnchorEl] = useState(null)
     const [selectedProduct, setSelectedProduct] = useState(null)
 
     const handleMenuOpen = (event, product) => {
+        event.stopPropagation()
         setAnchorEl(event.currentTarget)
         setSelectedProduct(product)
     }
 
-    const handleMenuClose = () => {
+    const handleMenuClose = (event) => {
+        event?.stopPropagation()
         setAnchorEl(null)
         setSelectedProduct(null)
     }
 
-    const handleEdit = () => {
+    const handleEdit = (event) => {
+        event.stopPropagation()
         if (selectedProduct) {
             onEditProduct?.(selectedProduct)
         }
         handleMenuClose()
     }
 
-    const handleDelete = () => {
+    const handleDelete = (event) => {
+        event.stopPropagation()
         if (selectedProduct) {
             onDeleteProduct?.(selectedProduct)
         }
         handleMenuClose()
+    }
+
+    const handleRowClick = (product) => {
+        onProductClick?.(product)
     }
 
     return (
@@ -75,7 +83,9 @@ function ProductsTable({ products, colors, isDark, onProductAction, onEditProduc
                         {products.map((product) => (
                             <TableRow
                                 key={product.id}
+                                onClick={() => handleRowClick(product)}
                                 sx={{
+                                    cursor: 'pointer',
                                     transition: 'all 0.15s ease',
                                     '&:hover': {
                                         bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(124, 58, 237, 0.03)',
@@ -86,7 +96,11 @@ function ProductsTable({ products, colors, isDark, onProductAction, onEditProduc
                                 }}
                             >
                                 <TableCell padding="checkbox">
-                                    <Checkbox size="small" sx={{ color: colors.textMuted }} />
+                                    <Checkbox
+                                        size="small"
+                                        sx={{ color: colors.textMuted }}
+                                        onClick={(e) => e.stopPropagation()}
+                                    />
                                 </TableCell>
                                 <TableCell sx={{ py: 2 }}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>

@@ -6,6 +6,7 @@ import ProductCataloguePage from './pages/ProductCataloguePage'
 import CustomersPage from './pages/CustomersPage'
 import CustomerDetailPage from './pages/CustomerDetailPage'
 import SubscriptionDetailPage from './pages/SubscriptionDetailPage'
+import ProductDetailPage from './pages/ProductDetailPage'
 import PlaceholderPage from './pages/PlaceholderPage'
 import './App.css'
 
@@ -13,6 +14,7 @@ function App() {
   const [activePage, setActivePage] = useState('usage-billing')
   const [selectedCustomerId, setSelectedCustomerId] = useState(null)
   const [selectedSubscriptionId, setSelectedSubscriptionId] = useState(null)
+  const [selectedProductId, setSelectedProductId] = useState(null)
   // Initialize theme from localStorage, default to 'dark' if not set
   const [themeMode, setThemeMode] = useState(() => {
     const savedTheme = localStorage.getItem('themeMode')
@@ -54,6 +56,16 @@ function App() {
     }
   }
 
+  const handleNavigateToProduct = (product) => {
+    setSelectedProductId(product.id)
+    setActivePage('product-detail')
+  }
+
+  const handleNavigateBackToProducts = () => {
+    setSelectedProductId(null)
+    setActivePage('products')
+  }
+
 
   const renderPage = () => {
     switch (activePage) {
@@ -70,7 +82,9 @@ function App() {
       case 'subscription-detail':
         return <SubscriptionDetailPage themeMode={themeMode} subscriptionId={selectedSubscriptionId} onNavigateBack={handleNavigateBackFromSubscription} />
       case 'products':
-        return <ProductCataloguePage themeMode={themeMode} />
+        return <ProductCataloguePage themeMode={themeMode} onNavigateToProduct={handleNavigateToProduct} />
+      case 'product-detail':
+        return <ProductDetailPage themeMode={themeMode} productId={selectedProductId} onNavigateBack={handleNavigateBackToProducts} />
       case 'revenue':
         return <PlaceholderPage title="Revenue Recovery" description="Track and recover revenue" themeMode={themeMode} />
       case 'usage-billing':
