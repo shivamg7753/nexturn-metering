@@ -15,14 +15,21 @@ import {
 } from '@mui/material'
 import MoreVertIcon from '@mui/icons-material/MoreVert'
 
-function CustomersTable({ customers, colors, isDark, onEditCustomer, onDeleteCustomer }) {
+function CustomersTable({ customers, colors, isDark, onEditCustomer, onDeleteCustomer, onCustomerClick }) {
     const [anchorEl, setAnchorEl] = useState(null)
     const [selectedCustomer, setSelectedCustomer] = useState(null)
     const [selectedRows, setSelectedRows] = useState([])
 
     const handleMenuOpen = (event, customer) => {
+        event.stopPropagation() // Prevent row click
         setAnchorEl(event.currentTarget)
         setSelectedCustomer(customer)
+    }
+
+    const handleRowClick = (customer) => {
+        if (onCustomerClick) {
+            onCustomerClick(customer.id)
+        }
     }
 
     const handleMenuClose = () => {
@@ -111,7 +118,9 @@ function CustomersTable({ customers, colors, isDark, onEditCustomer, onDeleteCus
                         {customers.map((customer) => (
                             <TableRow
                                 key={customer.id}
+                                onClick={() => handleRowClick(customer)}
                                 sx={{
+                                    cursor: 'pointer',
                                     '&:hover': {
                                         bgcolor: colors.hover,
                                     },
@@ -121,7 +130,10 @@ function CustomersTable({ customers, colors, isDark, onEditCustomer, onDeleteCus
                                 <TableCell padding="checkbox">
                                     <Checkbox
                                         checked={selectedRows.includes(customer.id)}
-                                        onChange={() => handleSelectRow(customer.id)}
+                                        onChange={(e) => {
+                                            e.stopPropagation()
+                                            handleSelectRow(customer.id)
+                                        }}
                                         sx={{
                                             color: colors.textTertiary,
                                             '&.Mui-checked': {

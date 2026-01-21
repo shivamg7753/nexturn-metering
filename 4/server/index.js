@@ -324,10 +324,17 @@ app.get('/api/customers/:id', async (req, res) => {
 
         res.json({
             id: customer._id,
+            customerId: customer.customerId,
             name: customer.name,
             email: customer.email,
             language: customer.language,
             paymentMethod: customer.paymentMethod,
+            businessName: customer.businessName,
+            individualName: customer.individualName,
+            billingDetails: customer.billingDetails,
+            nextInvoiceNumber: customer.nextInvoiceNumber,
+            taxLocationStatus: customer.taxLocationStatus,
+            taxStatus: customer.taxStatus,
             createdAt: customer.createdAt,
             updatedAt: customer.updatedAt
         });

@@ -3,7 +3,7 @@ import { Box, Typography, Button } from '@mui/material'
 import { useCustomers } from '../hooks/useCustomers'
 import { CustomerEmptyState, CustomerFilterBar, AddCustomerDrawer, CustomersTable, getCustomerColors } from '../components/customers'
 
-function CustomersPage({ themeMode }) {
+function CustomersPage({ themeMode, onNavigateToCustomer }) {
     const { customers, loading, fetchCustomers } = useCustomers()
     const isDark = themeMode === 'dark'
     const colors = getCustomerColors(isDark)
@@ -108,6 +108,7 @@ function CustomersPage({ themeMode }) {
                         customers={customers}
                         colors={colors}
                         isDark={isDark}
+                        onCustomerClick={onNavigateToCustomer}
                     />
                 )}
             </Box>

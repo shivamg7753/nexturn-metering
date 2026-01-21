@@ -4,11 +4,13 @@ import HomePage from './pages/HomePage'
 import UsageBillingPage from './pages/UsageBillingPage'
 import ProductCataloguePage from './pages/ProductCataloguePage'
 import CustomersPage from './pages/CustomersPage'
+import CustomerDetailPage from './pages/CustomerDetailPage'
 import PlaceholderPage from './pages/PlaceholderPage'
 import './App.css'
 
 function App() {
   const [activePage, setActivePage] = useState('usage-billing')
+  const [selectedCustomerId, setSelectedCustomerId] = useState(null)
   // Initialize theme from localStorage, default to 'dark' if not set
   const [themeMode, setThemeMode] = useState(() => {
     const savedTheme = localStorage.getItem('themeMode')
@@ -25,6 +27,17 @@ function App() {
     setThemeMode(prev => prev === 'dark' ? 'light' : 'dark')
   }
 
+  const handleNavigateToCustomer = (customerId) => {
+    setSelectedCustomerId(customerId)
+    setActivePage('customer-detail')
+  }
+
+  const handleNavigateBackToCustomers = () => {
+    setSelectedCustomerId(null)
+    setActivePage('customers')
+  }
+
+
   const renderPage = () => {
     switch (activePage) {
       case 'home':
@@ -34,7 +47,9 @@ function App() {
       case 'transactions':
         return <PlaceholderPage title="Transactions" description="View transaction history" themeMode={themeMode} />
       case 'customers':
-        return <CustomersPage themeMode={themeMode} />
+        return <CustomersPage themeMode={themeMode} onNavigateToCustomer={handleNavigateToCustomer} />
+      case 'customer-detail':
+        return <CustomerDetailPage themeMode={themeMode} customerId={selectedCustomerId} onNavigateBack={handleNavigateBackToCustomers} />
       case 'products':
         return <ProductCataloguePage themeMode={themeMode} />
       case 'revenue':
