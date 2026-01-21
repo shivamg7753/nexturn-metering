@@ -3,7 +3,7 @@ import { Box, Typography, Button } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import AddSubscriptionDrawer from './AddSubscriptionDrawer'
 
-function CustomerSubscriptionsSection({ customer, colors, themeMode }) {
+function CustomerSubscriptionsSection({ customer, colors, themeMode, onNavigateToSubscription }) {
     const [drawerOpen, setDrawerOpen] = useState(false)
     const [subscriptions, setSubscriptions] = useState([])
     const [loading, setLoading] = useState(true)
@@ -97,11 +97,13 @@ function CustomerSubscriptionsSection({ customer, colors, themeMode }) {
                         {subscriptions.map((subscription) => (
                             <Box
                                 key={subscription._id}
+                                onClick={() => onNavigateToSubscription && onNavigateToSubscription(subscription._id)}
                                 sx={{
                                     p: 2,
                                     mb: 1,
                                     border: `1px solid ${colors.border}`,
                                     borderRadius: 2,
+                                    cursor: 'pointer',
                                     '&:hover': { bgcolor: colors.hover }
                                 }}
                             >

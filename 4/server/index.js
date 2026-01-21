@@ -460,9 +460,46 @@ app.get('/api/subscriptions/:id', async (req, res) => {
 // Create subscription
 app.post('/api/subscriptions', async (req, res) => {
     try {
+        // Fetch product details for all products in the subscription
+        const productsWithDetails = await Promise.all(
+            (req.body.products || []).map(async (productItem) => {
+                const product = await Product.findById(productItem.productId);
+                if (!product) {
+                    throw new Error(`Product not found: ${productItem.productId}`);
+                }
+
+                // Get the first price or calculate based on pricing
+                let price = 0;
+                let priceDetails = null;
+
+                if (product.prices && product.prices.length > 0) {
+                    const firstPrice = product.prices[0];
+                    priceDetails = firstPrice;
+
+                    // Calculate price based on pricing model
+                    if (firstPrice.pricingModel === 'flat-rate') {
+                        price = firstPrice.amount || 0;
+                    } else if (firstPrice.pricingModel === 'tiered' || firstPrice.pricingModel === 'graduated') {
+                        // For tiered/graduated, use first tier price
+                        if (firstPrice.tiers && firstPrice.tiers.length > 0) {
+                            price = firstPrice.tiers[0].unitPrice || firstPrice.tiers[0].flatFee || 0;
+                        }
+                    }
+                }
+
+                return {
+                    productId: product._id,
+                    productName: product.name,
+                    quantity: productItem.quantity || 1,
+                    price: price,
+                    priceDetails: priceDetails
+                };
+            })
+        );
+
         const subscriptionData = {
             customerId: req.body.customerId,
-            products: req.body.products || [],
+            products: productsWithDetails,
             duration: {
                 startDate: req.body.duration?.startDate || new Date(),
                 endDate: req.body.duration?.endDate || null,

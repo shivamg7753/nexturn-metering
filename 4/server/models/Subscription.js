@@ -16,7 +16,8 @@ const subscriptionSchema = new mongoose.Schema({
             type: Number,
             default: 1
         },
-        price: Number
+        price: Number, // Calculated price per unit
+        priceDetails: mongoose.Schema.Types.Mixed // Store complete pricing information
     }],
     duration: {
         startDate: {

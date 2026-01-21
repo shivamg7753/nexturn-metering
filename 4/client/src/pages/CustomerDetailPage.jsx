@@ -8,7 +8,7 @@ import CustomerInvoicesSection from '../components/customers/CustomerInvoicesSec
 import CustomerCreditGrantsSection from '../components/customers/CustomerCreditGrantsSection'
 import CustomerRecentActivitySection from '../components/customers/CustomerRecentActivitySection'
 
-function CustomerDetailPage({ themeMode, customerId, onNavigateBack }) {
+function CustomerDetailPage({ themeMode, customerId, onNavigateBack, onNavigateToSubscription }) {
     const isDark = themeMode === 'dark'
     const colors = getCustomerColors(isDark)
     const [customer, setCustomer] = useState(null)
@@ -108,7 +108,7 @@ function CustomerDetailPage({ themeMode, customerId, onNavigateBack }) {
             >
                 {/* Left Column - Main Content */}
                 <Box>
-                    <CustomerSubscriptionsSection customer={customer} colors={colors} themeMode={themeMode} />
+                    <CustomerSubscriptionsSection customer={customer} colors={colors} themeMode={themeMode} onNavigateToSubscription={onNavigateToSubscription} />
                     <CustomerInvoicesSection customer={customer} colors={colors} />
                     <CustomerCreditGrantsSection customer={customer} colors={colors} />
                     <CustomerRecentActivitySection customer={customer} colors={colors} />

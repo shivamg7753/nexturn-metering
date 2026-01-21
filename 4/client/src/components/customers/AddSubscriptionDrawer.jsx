@@ -61,13 +61,43 @@ function AddSubscriptionDrawer({ open, onClose, customer, themeMode, onSuccess }
         }
     }
 
+    const getProductPrice = (product) => {
+        if (!product.prices || product.prices.length === 0) return 0
+        const firstPrice = product.prices[0]
+
+        if (firstPrice.pricingModel === 'flat-rate') {
+            return firstPrice.amount || 0
+        } else if (firstPrice.pricingModel === 'tiered' || firstPrice.pricingModel === 'graduated') {
+            if (firstPrice.tiers && firstPrice.tiers.length > 0) {
+                return firstPrice.tiers[0].unitPrice || firstPrice.tiers[0].flatFee || 0
+            }
+        }
+        return 0
+    }
+
+    const getProductCurrency = (product) => {
+        if (!product.prices || product.prices.length === 0) return 'USD'
+        return product.prices[0].currency || 'USD'
+    }
+
+    const getProductBillingPeriod = (product) => {
+        if (!product.prices || product.prices.length === 0) return 'month'
+        return product.prices[0].billingPeriod || 'month'
+    }
+
     const handleAddProduct = () => {
         if (formData.selectedProduct) {
+            const price = getProductPrice(formData.selectedProduct)
+            const currency = getProductCurrency(formData.selectedProduct)
+            const billingPeriod = getProductBillingPeriod(formData.selectedProduct)
+
             const newProduct = {
                 productId: formData.selectedProduct.id,
                 productName: formData.selectedProduct.name,
                 quantity: formData.quantity,
-                price: 0 // Could calculate from product prices
+                price: price,
+                currency: currency,
+                billingPeriod: billingPeriod
             }
 
             setFormData({
@@ -77,6 +107,20 @@ function AddSubscriptionDrawer({ open, onClose, customer, themeMode, onSuccess }
                 quantity: 1
             })
         }
+    }
+
+    const calculateTotal = () => {
+        return formData.products.reduce((sum, product) => {
+            return sum + (product.price * product.quantity)
+        }, 0)
+    }
+
+    const formatCurrency = (amount, currency = 'USD') => {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: currency,
+            minimumFractionDigits: 2
+        }).format(amount)
     }
 
     const handleSubmit = async () => {
@@ -296,9 +340,22 @@ function AddSubscriptionDrawer({ open, onClose, customer, themeMode, onSuccess }
                             <Box key={index} sx={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 2, mb: 1 }}>
                                 <Typography sx={{ color: colors.text, fontSize: '0.875rem' }}>{product.productName}</Typography>
                                 <Typography sx={{ color: colors.text, fontSize: '0.875rem' }}>{product.quantity}</Typography>
-                                <Typography sx={{ color: colors.text, fontSize: '0.875rem', textAlign: 'right', width: 60 }}>—</Typography>
+                                <Typography sx={{ color: colors.text, fontSize: '0.875rem', textAlign: 'right', width: 60 }}>
+                                    {formatCurrency(product.price * product.quantity, product.currency)}
+                                </Typography>
                             </Box>
                         ))}
+
+                        {/* Total */}
+                        {formData.products.length > 0 && (
+                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 2, mt: 2, pt: 2, borderTop: `1px solid ${colors.border}` }}>
+                                <Typography sx={{ color: colors.text, fontSize: '0.875rem', fontWeight: 600 }}>Total</Typography>
+                                <Typography sx={{ color: colors.text, fontSize: '0.875rem' }}></Typography>
+                                <Typography sx={{ color: colors.text, fontSize: '0.875rem', fontWeight: 600, textAlign: 'right', width: 60 }}>
+                                    {formatCurrency(calculateTotal(), formData.products[0]?.currency || 'USD')}
+                                </Typography>
+                            </Box>
+                        )}
 
                         <Box sx={{ display: 'flex', gap: 3, mt: 2 }}>
                             <Button

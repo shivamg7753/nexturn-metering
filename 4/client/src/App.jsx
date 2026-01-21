@@ -5,12 +5,14 @@ import UsageBillingPage from './pages/UsageBillingPage'
 import ProductCataloguePage from './pages/ProductCataloguePage'
 import CustomersPage from './pages/CustomersPage'
 import CustomerDetailPage from './pages/CustomerDetailPage'
+import SubscriptionDetailPage from './pages/SubscriptionDetailPage'
 import PlaceholderPage from './pages/PlaceholderPage'
 import './App.css'
 
 function App() {
   const [activePage, setActivePage] = useState('usage-billing')
   const [selectedCustomerId, setSelectedCustomerId] = useState(null)
+  const [selectedSubscriptionId, setSelectedSubscriptionId] = useState(null)
   // Initialize theme from localStorage, default to 'dark' if not set
   const [themeMode, setThemeMode] = useState(() => {
     const savedTheme = localStorage.getItem('themeMode')
@@ -37,6 +39,21 @@ function App() {
     setActivePage('customers')
   }
 
+  const handleNavigateToSubscription = (subscriptionId) => {
+    setSelectedSubscriptionId(subscriptionId)
+    setActivePage('subscription-detail')
+  }
+
+  const handleNavigateBackFromSubscription = () => {
+    setSelectedSubscriptionId(null)
+    // Navigate back to the customer detail if we have a customer ID
+    if (selectedCustomerId) {
+      setActivePage('customer-detail')
+    } else {
+      setActivePage('customers')
+    }
+  }
+
 
   const renderPage = () => {
     switch (activePage) {
@@ -49,7 +66,9 @@ function App() {
       case 'customers':
         return <CustomersPage themeMode={themeMode} onNavigateToCustomer={handleNavigateToCustomer} />
       case 'customer-detail':
-        return <CustomerDetailPage themeMode={themeMode} customerId={selectedCustomerId} onNavigateBack={handleNavigateBackToCustomers} />
+        return <CustomerDetailPage themeMode={themeMode} customerId={selectedCustomerId} onNavigateBack={handleNavigateBackToCustomers} onNavigateToSubscription={handleNavigateToSubscription} />
+      case 'subscription-detail':
+        return <SubscriptionDetailPage themeMode={themeMode} subscriptionId={selectedSubscriptionId} onNavigateBack={handleNavigateBackFromSubscription} />
       case 'products':
         return <ProductCataloguePage themeMode={themeMode} />
       case 'revenue':
