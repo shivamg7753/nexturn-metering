@@ -7,5 +7,6 @@ export { default as CustomerSubscriptionsSection } from './CustomerSubscriptions
 export { default as CustomerInvoicesSection } from './CustomerInvoicesSection'
 export { default as CustomerCreditGrantsSection } from './CustomerCreditGrantsSection'
 export { default as CustomerRecentActivitySection } from './CustomerRecentActivitySection'
+export { default as AddSubscriptionDrawer } from './AddSubscriptionDrawer'
 export { getCustomerColors } from './themeUtils'
 

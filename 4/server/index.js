@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import Product from './models/Product.js';
 import Meter from './models/Meter.js';
 import Customer from './models/Customer.js';
+import Subscription from './models/Subscription.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -419,6 +420,122 @@ app.delete('/api/customers/:id', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
+// ========== SUBSCRIPTION ROUTES ==========
+
+// Get all subscriptions (with optional customer filter)
+app.get('/api/subscriptions', async (req, res) => {
+    try {
+        const { customerId } = req.query;
+        let filter = {};
+
+        if (customerId) {
+            filter.customerId = customerId;
+        }
+
+        const subscriptions = await Subscription.find(filter)
+            .populate('customerId', 'name email')
+            .sort({ createdAt: -1 });
+
+        res.json(subscriptions);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get single subscription
+app.get('/api/subscriptions/:id', async (req, res) => {
+    try {
+        const subscription = await Subscription.findById(req.params.id)
+            .populate('customerId', 'name email');
+
+        if (!subscription) return res.status(404).json({ error: 'Subscription not found' });
+
+        res.json(subscription);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Create subscription
+app.post('/api/subscriptions', async (req, res) => {
+    try {
+        const subscriptionData = {
+            customerId: req.body.customerId,
+            products: req.body.products || [],
+            duration: {
+                startDate: req.body.duration?.startDate || new Date(),
+                endDate: req.body.duration?.endDate || null,
+                isForever: req.body.duration?.isForever || false
+            },
+            billingStartDate: req.body.billingStartDate || new Date(),
+            trialDays: req.body.trialDays || 0,
+            collectTaxAutomatically: req.body.collectTaxAutomatically || false,
+            metadata: req.body.metadata || {},
+            status: req.body.trialDays > 0 ? 'trialing' : 'active',
+            couponCode: req.body.couponCode || null,
+            manualTax: req.body.manualTax || null
+        };
+
+        const subscription = new Subscription(subscriptionData);
+        await subscription.save();
+
+        const populatedSubscription = await Subscription.findById(subscription._id)
+            .populate('customerId', 'name email');
+
+        res.status(201).json(populatedSubscription);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// Update subscription
+app.put('/api/subscriptions/:id', async (req, res) => {
+    try {
+        const updateData = {
+            products: req.body.products,
+            duration: req.body.duration,
+            billingStartDate: req.body.billingStartDate,
+            trialDays: req.body.trialDays,
+            collectTaxAutomatically: req.body.collectTaxAutomatically,
+            metadata: req.body.metadata,
+            status: req.body.status,
+            couponCode: req.body.couponCode,
+            manualTax: req.body.manualTax
+        };
+
+        // Remove undefined fields
+        Object.keys(updateData).forEach(key => {
+            if (updateData[key] === undefined) {
+                delete updateData[key];
+            }
+        });
+
+        const subscription = await Subscription.findByIdAndUpdate(
+            req.params.id,
+            updateData,
+            { new: true, runValidators: true }
+        ).populate('customerId', 'name email');
+
+        if (!subscription) return res.status(404).json({ error: 'Subscription not found' });
+
+        res.json(subscription);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// Delete/cancel subscription
+app.delete('/api/subscriptions/:id', async (req, res) => {
+    try {
+        const subscription = await Subscription.findByIdAndDelete(req.params.id);
+        if (!subscription) return res.status(404).json({ error: 'Subscription not found' });
+        res.status(204).send();
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 
 // Seed sample data - DISABLED (only show real database data)
 // Uncomment this function and the call in app.listen if you need sample data

@@ -108,7 +108,7 @@ function CustomerDetailPage({ themeMode, customerId, onNavigateBack }) {
             >
                 {/* Left Column - Main Content */}
                 <Box>
-                    <CustomerSubscriptionsSection customer={customer} colors={colors} />
+                    <CustomerSubscriptionsSection customer={customer} colors={colors} themeMode={themeMode} />
                     <CustomerInvoicesSection customer={customer} colors={colors} />
                     <CustomerCreditGrantsSection customer={customer} colors={colors} />
                     <CustomerRecentActivitySection customer={customer} colors={colors} />
