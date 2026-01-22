@@ -547,17 +547,30 @@ app.post('/api/subscriptions', async (req, res) => {
                 let price = 0;
                 let priceDetails = null;
 
-                if (product.prices && product.prices.length > 0) {
-                    const firstPrice = product.prices[0];
-                    priceDetails = firstPrice;
+                // Get the price based on index if provided, or default to first
+                let selectedPrice = null;
+
+                if (productItem.priceIndex !== undefined && Number.isInteger(productItem.priceIndex)) {
+                    if (product.prices && product.prices[productItem.priceIndex]) {
+                        selectedPrice = product.prices[productItem.priceIndex];
+                    }
+                }
+
+                // Fallback to first price if no index or invalid index (backward compatibility)
+                if (!selectedPrice && product.prices && product.prices.length > 0) {
+                    selectedPrice = product.prices[0];
+                }
+
+                if (selectedPrice) {
+                    priceDetails = selectedPrice;
 
                     // Calculate price based on pricing model
-                    if (firstPrice.pricingModel === 'flat-rate') {
-                        price = firstPrice.amount || 0;
-                    } else if (firstPrice.pricingModel === 'tiered' || firstPrice.pricingModel === 'graduated') {
+                    if (selectedPrice.pricingModel === 'flat-rate') {
+                        price = selectedPrice.amount || 0;
+                    } else if (selectedPrice.pricingModel === 'tiered' || selectedPrice.pricingModel === 'graduated') {
                         // For tiered/graduated, use first tier price
-                        if (firstPrice.tiers && firstPrice.tiers.length > 0) {
-                            price = firstPrice.tiers[0].unitPrice || firstPrice.tiers[0].flatFee || 0;
+                        if (selectedPrice.tiers && selectedPrice.tiers.length > 0) {
+                            price = selectedPrice.tiers[0].unitPrice || selectedPrice.tiers[0].flatFee || 0;
                         }
                     }
                 }

@@ -61,43 +61,112 @@ function AddSubscriptionDrawer({ open, onClose, customer, themeMode, onSuccess }
         }
     }
 
-    const getProductPrice = (product) => {
-        if (!product.prices || product.prices.length === 0) return 0
-        const firstPrice = product.prices[0]
+    const formatPriceLabel = (price) => {
+        const currency = price.currency || 'USD'
+        const amount = price.amount || 0
+        const period = price.billingPeriod || 'month'
 
-        if (firstPrice.pricingModel === 'flat-rate') {
-            return firstPrice.amount || 0
-        } else if (firstPrice.pricingModel === 'tiered' || firstPrice.pricingModel === 'graduated') {
-            if (firstPrice.tiers && firstPrice.tiers.length > 0) {
-                return firstPrice.tiers[0].unitPrice || firstPrice.tiers[0].flatFee || 0
-            }
+        // Simple symbol logic
+        const currencySymbol = (currency === 'USD') ? '$' : (currency === 'EUR' ? '€' : currency + ' ')
+
+        if (price.pricingModel === 'flat-rate') {
+            return `${currencySymbol}${amount.toFixed(2)} ${currency} / ${period}`
+        } else if (['tiered', 'graduated', 'volume'].includes(price.pricingModel)) {
+            const firstTier = price.tiers && price.tiers.length > 0 ? price.tiers[0] : {}
+            const unitPrice = firstTier.unitPrice || firstTier.flatFee || 0
+            return `Starts at ${currencySymbol}${unitPrice.toFixed(2)} ${currency} per unit / ${period}`
         }
-        return 0
+        return `${price.pricingModel} • ${currencySymbol}${amount} / ${period}`
     }
 
-    const getProductCurrency = (product) => {
-        if (!product.prices || product.prices.length === 0) return 'USD'
-        return product.prices[0].currency || 'USD'
-    }
+    const productOptions = products.reduce((acc, product) => {
+        // Still filter out invalid ones from the main list, but "Add" will appear for search terms
+        if (!product.prices || product.prices.length === 0) return acc;
+        product.prices.forEach((price, index) => {
+            acc.push({
+                id: `${product.id || product._id}-${index}`,
+                productName: product.name,
+                product: product,
+                price: price, // The specific price plan
+                priceIndex: index, // Store the index
+                label: formatPriceLabel(price)
+            })
+        })
+        return acc;
+    }, [])
 
-    const getProductBillingPeriod = (product) => {
-        if (!product.prices || product.prices.length === 0) return 'month'
-        return product.prices[0].billingPeriod || 'month'
+    const createProductOnTheFly = async (name) => {
+        try {
+            // Create a product with a default flat-rate monthly price
+            const newProductPayload = {
+                name: name,
+                description: 'Created from subscription drawer',
+                status: 'active',
+                pricing: 'Recurring',
+                prices: [{
+                    pricingModel: 'flat-rate',
+                    pricingType: 'recurring',
+                    amount: 0,
+                    currency: 'USD',
+                    billingPeriod: 'monthly',
+                    includeTaxInPrice: 'auto'
+                }]
+            }
+
+            const response = await fetch('http://localhost:3001/api/products', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newProductPayload)
+            })
+
+            const createdProduct = await response.json()
+
+            // Refresh products list
+            await fetchProducts()
+
+            // Return the formatted option for the new product
+            if (createdProduct && createdProduct.prices && createdProduct.prices.length > 0) {
+                return {
+                    id: `${createdProduct.id}-${0}`,
+                    productName: createdProduct.name,
+                    product: createdProduct,
+                    price: createdProduct.prices[0],
+                    priceIndex: 0,
+                    label: formatPriceLabel(createdProduct.prices[0])
+                }
+            }
+            return null
+        } catch (error) {
+            console.error('Error creating product:', error)
+            return null
+        }
     }
 
     const handleAddProduct = () => {
         if (formData.selectedProduct) {
-            const price = getProductPrice(formData.selectedProduct)
-            const currency = getProductCurrency(formData.selectedProduct)
-            const billingPeriod = getProductBillingPeriod(formData.selectedProduct)
+            // selectedProduct is now the Option object { product, price, ... }
+            const { product, price, priceIndex } = formData.selectedProduct
+
+            // Extract details from the specific selected price
+            let finalPrice = 0
+            if (price.pricingModel === 'flat-rate') {
+                finalPrice = price.amount || 0
+            } else if (['tiered', 'graduated'].includes(price.pricingModel)) {
+                if (price.tiers && price.tiers.length > 0) {
+                    finalPrice = price.tiers[0].unitPrice || price.tiers[0].flatFee || 0
+                }
+            }
 
             const newProduct = {
-                productId: formData.selectedProduct.id,
-                productName: formData.selectedProduct.name,
+                productId: product.id || product._id,
+                productName: product.name,
                 quantity: formData.quantity,
-                price: price,
-                currency: currency,
-                billingPeriod: billingPeriod
+                price: finalPrice,
+                currency: price.currency || 'USD',
+                billingPeriod: price.billingPeriod || 'month',
+                pricingModel: price.pricingModel,
+                priceDetails: price, // Store full details
+                priceIndex: priceIndex // Pass the index to the backend
             }
 
             setFormData({
@@ -297,9 +366,65 @@ function AddSubscriptionDrawer({ open, onClose, customer, themeMode, onSuccess }
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 2, mb: 2 }}>
                             <Autocomplete
                                 value={formData.selectedProduct}
-                                onChange={(e, newValue) => setFormData({ ...formData, selectedProduct: newValue })}
-                                options={products}
-                                getOptionLabel={(option) => option.name || ''}
+                                onChange={async (e, newValue) => {
+                                    if (typeof newValue === 'string') {
+                                        // Timeout to avoid interference
+                                        setTimeout(() => {
+                                            // Handling direct string entry if freeSolo were true (it's not, but good for safety)
+                                        });
+                                    } else if (newValue && newValue.inputValue) {
+                                        // Create a new value from the user input
+                                        const newOption = await createProductOnTheFly(newValue.inputValue);
+                                        if (newOption) {
+                                            setFormData({ ...formData, selectedProduct: newOption });
+                                        }
+                                    } else {
+                                        setFormData({ ...formData, selectedProduct: newValue });
+                                    }
+                                }}
+                                filterOptions={(options, params) => {
+                                    const filtered = filter(options, params);
+
+                                    const { inputValue } = params;
+                                    // Suggest the creation of a new value
+                                    const isExisting = options.some((option) => inputValue === option.productName);
+                                    if (inputValue !== '' && !isExisting) {
+                                        filtered.push({
+                                            inputValue,
+                                            productName: `Add "${inputValue}"`,
+                                            label: 'Create new product with default pricing',
+                                            id: 'new-product-id'
+                                        });
+                                    }
+                                    return filtered;
+                                }}
+                                options={productOptions}
+                                groupBy={(option) => option.productName}
+                                getOptionLabel={(option) => {
+                                    // Value selected with enter, right from the input
+                                    if (typeof option === 'string') {
+                                        return option;
+                                    }
+                                    // Add "xxx" option created dynamically
+                                    if (option.inputValue) {
+                                        return option.productName;
+                                    }
+                                    // Regular option
+                                    return option.productName ? `${option.productName} - ${option.label}` : '';
+                                }}
+                                isOptionEqualToValue={(option, value) => option.id === value.id}
+                                renderOption={(props, option) => (
+                                    <li {...props}>
+                                        <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                                            <Typography sx={{ fontSize: '0.875rem', fontWeight: option.inputValue ? 600 : 400 }}>
+                                                {option.productName}
+                                            </Typography>
+                                            <Typography sx={{ fontSize: '0.75rem', color: colors.textSecondary }}>
+                                                {option.label}
+                                            </Typography>
+                                        </Box>
+                                    </li>
+                                )}
                                 renderInput={(params) => (
                                     <TextField
                                         {...params}
@@ -314,6 +439,9 @@ function AddSubscriptionDrawer({ open, onClose, customer, themeMode, onSuccess }
                                         }}
                                     />
                                 )}
+                                selectOnFocus
+                                clearOnBlur
+                                handleHomeEndKeys
                                 sx={{ flex: 1 }}
                             />
                             <TextField
