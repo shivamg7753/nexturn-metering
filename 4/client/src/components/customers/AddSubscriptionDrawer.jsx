@@ -9,10 +9,13 @@ import {
     Autocomplete,
     Switch,
     FormControlLabel,
-    Divider
+    Divider,
+    createFilterOptions
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
+
+const filter = createFilterOptions()
 
 function AddSubscriptionDrawer({ open, onClose, customer, themeMode, onSuccess }) {
     const isDark = themeMode === 'dark'
