@@ -1,11 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import {
-    fetchMeters as fetchMetersApi,
-    fetchMeterById,
-    createMeter as createMeterApi,
-    updateMeter as updateMeterApi,
-    deleteMeter as deleteMeterApi
-} from '../api/meterApi.js';
+import * as meterService from '../services/meter/meterService';
 
 /**
  * useMeters Hook
@@ -20,8 +14,8 @@ export function useMeters() {
         try {
             setLoading(true);
             setError(null);
-            const data = await fetchMetersApi();
-            setMeters(data.meters || []);
+            const data = await meterService.fetchAllMeters();
+            setMeters(data || []);
         } catch (err) {
             console.error('Error fetching meters:', err);
             setError(err.message);
@@ -33,7 +27,7 @@ export function useMeters() {
 
     const getMeter = useCallback(async (id) => {
         try {
-            return await fetchMeterById(id);
+            return await meterService.fetchMeterById(id);
         } catch (err) {
             console.error('Error getting meter:', err);
             return null;
@@ -42,7 +36,7 @@ export function useMeters() {
 
     const createMeter = useCallback(async (meterData) => {
         try {
-            const newMeter = await createMeterApi(meterData);
+            const newMeter = await meterService.createMeter(meterData);
             await fetchMeters();
             return { success: true, meter: newMeter };
         } catch (err) {
@@ -53,7 +47,7 @@ export function useMeters() {
 
     const updateMeter = useCallback(async (id, meterData) => {
         try {
-            const updatedMeter = await updateMeterApi(id, meterData);
+            const updatedMeter = await meterService.updateMeter(id, meterData);
             await fetchMeters();
             return { success: true, meter: updatedMeter };
         } catch (err) {
@@ -64,7 +58,7 @@ export function useMeters() {
 
     const deleteMeter = useCallback(async (id) => {
         try {
-            await deleteMeterApi(id);
+            await meterService.deleteMeter(id);
             await fetchMeters();
             return { success: true };
         } catch (err) {

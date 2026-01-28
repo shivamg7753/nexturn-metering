@@ -68,6 +68,27 @@ function MultiplePricesDisplay({ prices = [], onEditPrice, onDeletePrice, colors
                     }}
                 >
                     <Box sx={{ flex: 1 }}>
+                        {/* Price Name Badge (if exists) */}
+                        {price.priceName && (
+                            <Box sx={{
+                                display: 'inline-flex',
+                                px: 1.5,
+                                py: 0.5,
+                                mb: 1,
+                                bgcolor: colors.accent + '15',
+                                border: `1px solid ${colors.accent}30`,
+                                borderRadius: '4px',
+                            }}>
+                                <Typography sx={{
+                                    fontSize: '0.75rem',
+                                    fontWeight: 600,
+                                    color: colors.accent,
+                                }}>
+                                    {price.priceName}
+                                </Typography>
+                            </Box>
+                        )}
+
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                             <Typography sx={{
                                 fontSize: 14,

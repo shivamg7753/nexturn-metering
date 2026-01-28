@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { fetchProductById, fetchProductLogs, fetchProductEvents } from '../api/productApi';
+import { fetchProductLogs, fetchProductEvents } from '../api/productApi';
+import * as productService from '../services/product/productService';
 
 /**
  * Custom hook for fetching and managing product data
+ * Delegates business logic to productService layer
  * @param {string} productId - The product ID to fetch
  * @returns {object} Product data and loading state
  */
@@ -21,7 +23,7 @@ export function useProduct(productId) {
             setError(null);
 
             const [productData, logsData, eventsData] = await Promise.all([
-                fetchProductById(productId),
+                productService.fetchProductById(productId),
                 fetchProductLogs(productId),
                 fetchProductEvents(productId)
             ]);
@@ -39,7 +41,7 @@ export function useProduct(productId) {
 
     const refreshProduct = async () => {
         try {
-            const productData = await fetchProductById(productId);
+            const productData = await productService.fetchProductById(productId);
             setProduct(productData);
         } catch (err) {
             console.error('Failed to refresh product:', err);

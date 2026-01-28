@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import * as priceApi from '../api/priceApi';
+import * as priceService from '../services/product/priceService';
 
 /**
  * Custom hook for managing price operations (add, edit, delete)
@@ -38,13 +38,14 @@ export function usePriceManagement(productId, onSuccess, showSuccess, showError)
                 ? formData.prices[0]
                 : formData;
 
+            // Use priceService for validation and API calls
             if (editingPriceIndex !== null) {
                 // Update existing price
-                await priceApi.updatePrice(productId, editingPriceIndex, priceData);
+                await priceService.updatePrice(productId, editingPriceIndex, priceData);
                 showSuccess('Price updated successfully');
             } else {
                 // Add new price
-                await priceApi.addPrice(productId, priceData);
+                await priceService.addPrice(productId, priceData);
                 showSuccess('Price added successfully');
             }
 
@@ -60,7 +61,7 @@ export function usePriceManagement(productId, onSuccess, showSuccess, showError)
 
         setDeleteLoading(true);
         try {
-            await priceApi.deletePrice(productId, deletingPriceIndex);
+            await priceService.deletePrice(productId, deletingPriceIndex);
             await onSuccess();
             showSuccess('Price deleted successfully');
             closeDeleteDialog();

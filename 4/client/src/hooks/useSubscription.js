@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchSubscriptionById } from '../api/subscriptionApi';
+import * as subscriptionService from '../services/customer/subscriptionService';
 
 /**
  * Custom hook for fetching and managing subscription data
@@ -17,7 +17,7 @@ export function useSubscription(subscriptionId) {
         try {
             setLoading(true);
             setError(null);
-            const data = await fetchSubscriptionById(subscriptionId);
+            const data = await subscriptionService.fetchSubscriptionById(subscriptionId);
             setSubscription(data);
         } catch (err) {
             console.error('Failed to fetch subscription data:', err);
@@ -29,7 +29,7 @@ export function useSubscription(subscriptionId) {
 
     const refreshSubscription = async () => {
         try {
-            const data = await fetchSubscriptionById(subscriptionId);
+            const data = await subscriptionService.fetchSubscriptionById(subscriptionId);
             setSubscription(data);
         } catch (err) {
             console.error('Failed to refresh subscription:', err);

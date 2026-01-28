@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 
 const initialState = {
+    priceName: '', // Name for the price plan
     pricingType: 'recurring',
     pricingModel: 'flat-rate',
     currency: 'INR',

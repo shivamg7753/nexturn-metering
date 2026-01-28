@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchCustomerById } from '../api/customerApi';
+import * as customerService from '../services/customer/customerService';
 
 /**
  * Custom hook for fetching and managing customer data
@@ -17,7 +17,7 @@ export function useCustomer(customerId) {
         try {
             setLoading(true);
             setError(null);
-            const data = await fetchCustomerById(customerId);
+            const data = await customerService.fetchCustomerById(customerId);
             setCustomer(data);
         } catch (err) {
             console.error('Failed to fetch customer data:', err);
@@ -29,7 +29,7 @@ export function useCustomer(customerId) {
 
     const refreshCustomer = async () => {
         try {
-            const data = await fetchCustomerById(customerId);
+            const data = await customerService.fetchCustomerById(customerId);
             setCustomer(data);
         } catch (err) {
             console.error('Failed to refresh customer:', err);

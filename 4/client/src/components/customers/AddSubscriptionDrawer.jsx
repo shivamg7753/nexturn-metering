@@ -68,7 +68,8 @@ function AddSubscriptionDrawer({ open, onClose, customer, themeMode, onSuccess }
     const formatPriceLabel = (price) => {
         const priceDisplay = formatPriceDisplay(price)
         const pricingDescription = getPricingDescription(price)
-        return `${price.productName || ''}\n${pricingDescription} • ${price.currency || 'INR'} ${price.amount || formatPriceDisplay(price).split(' ')[2]} / ${price.billingPeriod || 'monthly'}`
+        const priceNameDisplay = price.priceName ? `${price.priceName} • ` : ''
+        return `${price.productName || ''}\n${priceNameDisplay}${pricingDescription} • ${price.currency || 'INR'} ${price.amount || formatPriceDisplay(price).split(' ')[2]} / ${price.billingPeriod || 'monthly'}`
     }
 
     const productOptions = products.reduce((acc, product) => {

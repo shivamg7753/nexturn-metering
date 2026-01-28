@@ -482,6 +482,42 @@ function MorePricingOptionsScreen({
                     colors={colors}
                 />
 
+                {/* Price Plan Name Input */}
+                <Box sx={{ mb: 3 }}>
+                    <Typography sx={{ color: colors.text, fontSize: '0.875rem', fontWeight: 500, mb: 1 }}>
+                        Price plan name
+                    </Typography>
+                    <Box
+                        component="input"
+                        type="text"
+                        placeholder="e.g., Standard Plan, Premium Tier, Enterprise"
+                        value={pricingData.priceName || ''}
+                        onChange={(e) => updateField('priceName', e.target.value)}
+                        sx={{
+                            width: '100%',
+                            px: 1.5,
+                            py: 1,
+                            fontSize: '0.9375rem',
+                            color: colors.text,
+                            backgroundColor: colors.inputBg,
+                            border: `1px solid ${colors.border}`,
+                            borderRadius: '6px',
+                            outline: 'none',
+                            transition: 'all 0.2s',
+                            '&:focus': {
+                                borderColor: colors.accent,
+                                boxShadow: `0 0 0 3px ${colors.accent}15`,
+                            },
+                            '&::placeholder': {
+                                color: colors.textSecondary,
+                            },
+                        }}
+                    />
+                    <Typography sx={{ color: colors.textSecondary, fontSize: '0.75rem', mt: 0.5 }}>
+                        Optional: Give this price a descriptive name to help identify it
+                    </Typography>
+                </Box>
+
                 {renderPricingFields()}
             </Box>
 

@@ -4,7 +4,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { getCustomerColors } from '../components/customers/themeUtils';
 import { useSubscription } from '../hooks/useSubscription';
-import { formatDateShort, formatDateTime } from '../utils/dateUtils';
+import { formatDateShort, formatDateTime, formatDate } from '../utils/dateUtils';
 import { formatCurrency, formatBillingPeriod } from '../utils/priceFormatters';
 
 function SubscriptionDetailPage({ themeMode }) {

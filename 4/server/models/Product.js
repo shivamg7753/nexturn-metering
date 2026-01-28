@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 const priceSchema = new mongoose.Schema({
+    priceName: { type: String }, // Name for the price plan
     pricingType: { type: String, enum: ['one-time', 'recurring'], default: 'recurring' },
     pricingModel: {
         type: String,

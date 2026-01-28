@@ -35,3 +35,14 @@ export const formatDateISO = (dateString) => {
     if (!dateString) return '';
     return new Date(dateString).toISOString().split('T')[0];
 };
+
+/**
+ * Formats a date string into a readable format (e.g., "Jan 28, 2026")
+ * @param {string} dateString - The date string to format
+ * @returns {string} Formatted date string
+ */
+export const formatDate = (dateString) => {
+    if (!dateString) return '—';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};

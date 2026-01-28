@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { fetchCustomers as fetchCustomersApi } from '../api/customerApi.js';
+import * as customerService from '../services/customer/customerService';
 
 /**
  * useCustomers Hook
  * Manages customer state and provides customer-related operations
+ * Delegates business logic to customerService layer
  */
 export function useCustomers() {
     const [customers, setCustomers] = useState([]);
@@ -14,7 +15,7 @@ export function useCustomers() {
         try {
             setLoading(true);
             setError(null);
-            const data = await fetchCustomersApi();
+            const data = await customerService.fetchAllCustomers();
             setCustomers(data);
         } catch (err) {
             console.error('Error fetching customers:', err);
