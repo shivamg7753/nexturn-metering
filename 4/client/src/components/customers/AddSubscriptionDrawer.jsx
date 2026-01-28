@@ -68,8 +68,7 @@ function AddSubscriptionDrawer({ open, onClose, customer, themeMode, onSuccess }
     const formatPriceLabel = (price) => {
         const priceDisplay = formatPriceDisplay(price)
         const pricingDescription = getPricingDescription(price)
-        const priceNameDisplay = price.priceName ? `${price.priceName} • ` : ''
-        return `${price.productName || ''}\n${priceNameDisplay}${pricingDescription} • ${price.currency || 'INR'} ${price.amount || formatPriceDisplay(price).split(' ')[2]} / ${price.billingPeriod || 'monthly'}`
+        return `${priceDisplay}\n${pricingDescription}`
     }
 
     const productOptions = products.reduce((acc, product) => {
@@ -418,7 +417,8 @@ function AddSubscriptionDrawer({ open, onClose, customer, themeMode, onSuccess }
                                         return option.productName;
                                     }
                                     // Regular option
-                                    return option.productName ? `${option.productName} - ${option.label}` : '';
+                                    const planName = option.price?.priceName ? ` - ${option.price.priceName}` : '';
+                                    return option.productName ? `${option.productName}${planName}` : '';
                                 }}
                                 isOptionEqualToValue={(option, value) => option.id === value.id}
                                 renderOption={(props, option) => (
@@ -426,8 +426,13 @@ function AddSubscriptionDrawer({ open, onClose, customer, themeMode, onSuccess }
                                         <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
                                             <Typography sx={{ fontSize: '0.875rem', fontWeight: option.inputValue ? 600 : 400 }}>
                                                 {option.productName}
+                                                {!option.inputValue && option.price?.priceName && (
+                                                    <Box component="span" sx={{ color: colors.textSecondary, fontWeight: 400, ml: 1 }}>
+                                                        ({option.price.priceName})
+                                                    </Box>
+                                                )}
                                             </Typography>
-                                            <Typography sx={{ fontSize: '0.75rem', color: colors.textSecondary }}>
+                                            <Typography sx={{ fontSize: '0.75rem', color: colors.textSecondary, whiteSpace: 'pre-line' }}>
                                                 {option.label}
                                             </Typography>
                                         </Box>

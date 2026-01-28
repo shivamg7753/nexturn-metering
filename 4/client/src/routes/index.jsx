@@ -7,6 +7,7 @@ import ProductDetailPage from '../pages/ProductDetailPage';
 import CustomersPage from '../pages/CustomersPage';
 import CustomerDetailPage from '../pages/CustomerDetailPage';
 import SubscriptionDetailPage from '../pages/SubscriptionDetailPage';
+import SubscriptionsPage from '../pages/SubscriptionsPage';
 import PlaceholderPage from '../pages/PlaceholderPage';
 
 /**
@@ -110,13 +111,7 @@ export const createAppRouter = (themeMode, onThemeToggle) => {
                 },
                 {
                     path: 'subscriptions',
-                    element: (
-                        <PlaceholderPage
-                            title="Subscriptions"
-                            description="Manage customer subscriptions"
-                            themeMode={themeMode}
-                        />
-                    ),
+                    element: <SubscriptionsPage themeMode={themeMode} />,
                 },
                 {
                     path: 'payments',
