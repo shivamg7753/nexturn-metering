@@ -1,33 +1,35 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react';
+import { fetchProducts as fetchProductsApi } from '../api/productApi.js';
 
-const API_BASE = 'http://localhost:3001/api'
-
+/**
+ * useProducts Hook
+ * Manages product state and provides product-related operations
+ */
 export function useProducts() {
-    const [products, setProducts] = useState([])
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState(null)
-    const [statusFilter, setStatusFilter] = useState('all')
-    const [counts, setCounts] = useState({ all: 0, active: 0, archived: 0 })
+    const [products, setProducts] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [counts, setCounts] = useState({ all: 0, active: 0, archived: 0 });
 
     const fetchProducts = useCallback(async () => {
         try {
-            setLoading(true)
-            setError(null)
-            const res = await fetch(`${API_BASE}/products?status=${statusFilter}`)
-            const data = await res.json()
-            setProducts(data.products)
-            setCounts(data.counts)
+            setLoading(true);
+            setError(null);
+            const data = await fetchProductsApi(statusFilter);
+            setProducts(data.products);
+            setCounts(data.counts);
         } catch (err) {
-            console.error('Error fetching products:', err)
-            setError(err.message)
+            console.error('Error fetching products:', err);
+            setError(err.message);
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
-    }, [statusFilter])
+    }, [statusFilter]);
 
     useEffect(() => {
-        fetchProducts()
-    }, [fetchProducts])
+        fetchProducts();
+    }, [fetchProducts]);
 
     return {
         products,
@@ -37,7 +39,7 @@ export function useProducts() {
         setStatusFilter,
         counts,
         fetchProducts
-    }
+    };
 }
 
-export default useProducts
+export default useProducts;

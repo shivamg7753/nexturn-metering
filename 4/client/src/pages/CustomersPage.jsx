@@ -1,10 +1,12 @@
-import { useState } from 'react'
-import { Box, Typography, Button } from '@mui/material'
-import { useCustomers } from '../hooks/useCustomers'
-import { CustomerEmptyState, CustomerFilterBar, AddCustomerDrawer, CustomersTable, getCustomerColors } from '../components/customers'
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Box, Typography, Button } from '@mui/material';
+import { useCustomers } from '../hooks/useCustomers';
+import { CustomerEmptyState, CustomerFilterBar, AddCustomerDrawer, CustomersTable, getCustomerColors } from '../components/customers';
 
-function CustomersPage({ themeMode, onNavigateToCustomer }) {
-    const { customers, loading, fetchCustomers } = useCustomers()
+function CustomersPage({ themeMode }) {
+    const navigate = useNavigate();
+    const { customers, loading, fetchCustomers } = useCustomers();
     const isDark = themeMode === 'dark'
     const colors = getCustomerColors(isDark)
     const [drawerOpen, setDrawerOpen] = useState(false)
@@ -108,7 +110,7 @@ function CustomersPage({ themeMode, onNavigateToCustomer }) {
                         customers={customers}
                         colors={colors}
                         isDark={isDark}
-                        onCustomerClick={onNavigateToCustomer}
+                        onCustomerClick={(customerId) => navigate(`/customers/${customerId}`)}
                     />
                 )}
             </Box>

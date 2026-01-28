@@ -1,14 +1,24 @@
-import { Box, Drawer, CssBaseline } from '@mui/material'
-import { ThemeProvider } from '@mui/material/styles'
-import Sidebar from './Sidebar'
-import TopBar from './TopBar'
-import { darkTheme, lightTheme } from '../theme'
-import { drawerWidth, getThemeColors } from '../theme/styles'
+import { Box, Drawer, CssBaseline } from '@mui/material';
+import { ThemeProvider } from '@mui/material/styles';
+import { Outlet, useLocation } from 'react-router-dom';
+import Sidebar from './Sidebar';
+import TopBar from './TopBar';
+import { darkTheme, lightTheme } from '../theme';
+import { drawerWidth, getThemeColors } from '../theme/styles';
 
-function Layout({ children, activePage, onNavigate, themeMode, onThemeToggle }) {
-    const theme = themeMode === 'dark' ? darkTheme : lightTheme
-    const isDark = themeMode === 'dark'
-    const colors = getThemeColors(themeMode)
+/**
+ * Layout Component
+ * Main layout wrapper with sidebar and top bar
+ * Uses React Router's Outlet for nested routes
+ */
+function Layout({ themeMode, onThemeToggle }) {
+    const theme = themeMode === 'dark' ? darkTheme : lightTheme;
+    const isDark = themeMode === 'dark';
+    const colors = getThemeColors(themeMode);
+    const location = useLocation();
+
+    // Extract active page from current route
+    const activePage = location.pathname.split('/')[1] || 'usage-billing';
 
     return (
         <ThemeProvider theme={theme}>
@@ -57,21 +67,21 @@ function Layout({ children, activePage, onNavigate, themeMode, onThemeToggle }) 
                         }
                     }}
                 >
-                    <Sidebar activePage={activePage} onNavigate={onNavigate} themeMode={themeMode} />
+                    <Sidebar activePage={activePage} themeMode={themeMode} />
                 </Drawer>
 
                 {/* Main Content */}
                 <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', zIndex: 1 }}>
                     <TopBar activePage={activePage} themeMode={themeMode} onThemeToggle={onThemeToggle} />
 
-                    {/* Page Content */}
+                    {/* Page Content - React Router Outlet */}
                     <Box sx={{ p: 4, flex: 1, overflowY: 'auto' }}>
-                        {children}
+                        <Outlet />
                     </Box>
                 </Box>
             </Box>
         </ThemeProvider>
-    )
+    );
 }
 
-export default Layout
+export default Layout;

@@ -1,102 +1,86 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react';
+import {
+    fetchMeters as fetchMetersApi,
+    fetchMeterById,
+    createMeter as createMeterApi,
+    updateMeter as updateMeterApi,
+    deleteMeter as deleteMeterApi
+} from '../api/meterApi.js';
 
-const API_BASE = 'http://localhost:3001/api'
-
+/**
+ * useMeters Hook
+ * Manages meter state and provides meter-related operations
+ */
 export function useMeters() {
-    const [meters, setMeters] = useState([])
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState(null)
+    const [meters, setMeters] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     const fetchMeters = useCallback(async () => {
         try {
-            setLoading(true)
-            setError(null)
-            const res = await fetch(`${API_BASE}/meters`)
-            if (!res.ok) throw new Error('Failed to fetch meters')
-            const data = await res.json()
-            setMeters(data.meters || [])
+            setLoading(true);
+            setError(null);
+            const data = await fetchMetersApi();
+            setMeters(data.meters || []);
         } catch (err) {
-            console.error('Error fetching meters:', err)
-            setError(err.message)
-            setMeters([])
+            console.error('Error fetching meters:', err);
+            setError(err.message);
+            setMeters([]);
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
-    }, [])
+    }, []);
 
     const getMeter = useCallback(async (id) => {
         try {
-            const res = await fetch(`${API_BASE}/meters/${id}`)
-            if (!res.ok) throw new Error('Meter not found')
-            return await res.json()
+            return await fetchMeterById(id);
         } catch (err) {
-            console.error('Error getting meter:', err)
-            return null
+            console.error('Error getting meter:', err);
+            return null;
         }
-    }, [])
+    }, []);
 
     const createMeter = useCallback(async (meterData) => {
         try {
-            const res = await fetch(`${API_BASE}/meters`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(meterData)
-            })
-            if (!res.ok) {
-                const errorData = await res.json()
-                throw new Error(errorData.error || 'Failed to create meter')
-            }
-            const newMeter = await res.json()
-            await fetchMeters()
-            return { success: true, meter: newMeter }
+            const newMeter = await createMeterApi(meterData);
+            await fetchMeters();
+            return { success: true, meter: newMeter };
         } catch (err) {
-            console.error('Error creating meter:', err)
-            return { success: false, error: err.message }
+            console.error('Error creating meter:', err);
+            return { success: false, error: err.message };
         }
-    }, [fetchMeters])
+    }, [fetchMeters]);
 
     const updateMeter = useCallback(async (id, meterData) => {
         try {
-            const res = await fetch(`${API_BASE}/meters/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(meterData)
-            })
-            if (!res.ok) {
-                const errorData = await res.json()
-                throw new Error(errorData.error || 'Failed to update meter')
-            }
-            const updatedMeter = await res.json()
-            await fetchMeters()
-            return { success: true, meter: updatedMeter }
+            const updatedMeter = await updateMeterApi(id, meterData);
+            await fetchMeters();
+            return { success: true, meter: updatedMeter };
         } catch (err) {
-            console.error('Error updating meter:', err)
-            return { success: false, error: err.message }
+            console.error('Error updating meter:', err);
+            return { success: false, error: err.message };
         }
-    }, [fetchMeters])
+    }, [fetchMeters]);
 
     const deleteMeter = useCallback(async (id) => {
         try {
-            const res = await fetch(`${API_BASE}/meters/${id}`, {
-                method: 'DELETE'
-            })
-            if (!res.ok) throw new Error('Failed to delete meter')
-            await fetchMeters()
-            return { success: true }
+            await deleteMeterApi(id);
+            await fetchMeters();
+            return { success: true };
         } catch (err) {
-            console.error('Error deleting meter:', err)
-            return { success: false, error: err.message }
+            console.error('Error deleting meter:', err);
+            return { success: false, error: err.message };
         }
-    }, [fetchMeters])
+    }, [fetchMeters]);
 
     const toggleMeterStatus = useCallback(async (id, currentStatus) => {
-        const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active'
-        return updateMeter(id, { status: newStatus })
-    }, [updateMeter])
+        const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
+        return updateMeter(id, { status: newStatus });
+    }, [updateMeter]);
 
     useEffect(() => {
-        fetchMeters()
-    }, [fetchMeters])
+        fetchMeters();
+    }, [fetchMeters]);
 
     return {
         meters,
@@ -108,7 +92,7 @@ export function useMeters() {
         updateMeter,
         deleteMeter,
         toggleMeterStatus
-    }
+    };
 }
 
-export default useMeters
+export default useMeters;

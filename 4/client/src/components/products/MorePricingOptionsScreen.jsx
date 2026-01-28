@@ -32,6 +32,7 @@ function MorePricingOptionsScreen({
     themeMode = 'light',
     onCreateMeter,
     isEditing = false, // New prop to indicate edit mode
+    nextLabel = null, // Custom label for next/submit button
 }) {
     const isDark = themeMode === 'dark'
     const baseColors = getProductCatalogueColors(isDark)
@@ -50,7 +51,9 @@ function MorePricingOptionsScreen({
         removeTier,
         validate,
         calculatePreview,
-    } = useAdvancedPricing()
+    } = useAdvancedPricing(initialData)
+
+
 
     const [previewData, setPreviewData] = useState({
         unitQuantity: 1,
@@ -59,8 +62,8 @@ function MorePricingOptionsScreen({
     })
 
     const [advancedData, setAdvancedData] = useState({
-        priceDescription: '',
-        lookupKey: '',
+        priceDescription: initialData?.priceDescription || '',
+        lookupKey: initialData?.lookupKey || '',
     })
 
     const totals = calculatePreview(previewData.unitQuantity)
@@ -546,7 +549,7 @@ function MorePricingOptionsScreen({
                         },
                     }}
                 >
-                    {isEditing ? 'Update price' : 'Next'}
+                    {nextLabel || (isEditing ? 'Update price' : 'Next')}
                 </Button>
             </Box>
         </Box>

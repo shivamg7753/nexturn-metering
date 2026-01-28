@@ -10,11 +10,26 @@ import MorePricingOptionsScreen from './MorePricingOptionsScreen'
 import MultiplePricesDisplay from './MultiplePricesDisplay'
 import { getProductCatalogueColors } from './themeUtils'
 
-function AddProductDrawer({ open, onClose, onSubmit, themeMode = 'light', meters = [], editProduct = null, onCreateMeter }) {
+function AddProductDrawer({
+    open,
+    onClose,
+    onSubmit,
+    themeMode = 'light',
+    meters = [],
+    editProduct = null,
+    onCreateMeter,
+    mode = 'full' // 'full' | 'price-only'
+}) {
     const isDark = themeMode === 'dark'
     const baseColors = getProductCatalogueColors(isDark)
     const [currentScreen, setCurrentScreen] = useState('basic') // 'basic' | 'pricing'
     const [editingPriceIndex, setEditingPriceIndex] = useState(null) // Track which price is being edited
+
+    useEffect(() => {
+        if (open) {
+            setCurrentScreen(mode === 'price-only' ? 'pricing' : 'basic')
+        }
+    }, [open, mode])
 
     const colors = {
         ...baseColors,
@@ -82,11 +97,28 @@ function AddProductDrawer({ open, onClose, onSubmit, themeMode = 'light', meters
     }
 
     const handleBackFromPricing = () => {
+        if (mode === 'price-only') {
+            handleClose()
+            return
+        }
         setEditingPriceIndex(null)
         setCurrentScreen('basic')
     }
 
-    const handlePricingNext = (pricingData) => {
+    const handlePricingNext = async (pricingData) => {
+        if (mode === 'price-only') {
+            setLoading(true)
+            try {
+                await onSubmit?.(pricingData)
+                handleClose()
+            } catch (error) {
+                console.error('Error saving price:', error)
+            } finally {
+                setLoading(false)
+            }
+            return
+        }
+
         if (editingPriceIndex !== null) {
             // Update existing price
             updatePrice(editingPriceIndex, pricingData)
@@ -294,6 +326,7 @@ function AddProductDrawer({ open, onClose, onSubmit, themeMode = 'light', meters
                         themeMode={themeMode}
                         onCreateMeter={onCreateMeter}
                         isEditing={editingPriceIndex !== null}
+                        nextLabel={mode === 'price-only' ? (editingPriceIndex !== null ? 'Update price' : 'Add price') : undefined}
                     />
                 )}
             </Box>

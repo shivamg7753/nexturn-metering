@@ -1,42 +1,21 @@
-import { useEffect, useState } from 'react'
-import { Box, Typography, Breadcrumbs, Link } from '@mui/material'
-import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import { getCustomerColors } from '../components/customers/themeUtils'
-import CustomerDetailsPanel from '../components/customers/CustomerDetailsPanel'
-import CustomerSubscriptionsSection from '../components/customers/CustomerSubscriptionsSection'
-import CustomerInvoicesSection from '../components/customers/CustomerInvoicesSection'
-import CustomerCreditGrantsSection from '../components/customers/CustomerCreditGrantsSection'
-import CustomerRecentActivitySection from '../components/customers/CustomerRecentActivitySection'
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Box, Typography, Breadcrumbs, Link } from '@mui/material';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import { getCustomerColors } from '../components/customers/themeUtils';
+import CustomerDetailsPanel from '../components/customers/CustomerDetailsPanel';
+import CustomerSubscriptionsSection from '../components/customers/CustomerSubscriptionsSection';
+import CustomerInvoicesSection from '../components/customers/CustomerInvoicesSection';
+import CustomerCreditGrantsSection from '../components/customers/CustomerCreditGrantsSection';
+import CustomerRecentActivitySection from '../components/customers/CustomerRecentActivitySection';
+import { useCustomer } from '../hooks/useCustomer';
 
-function CustomerDetailPage({ themeMode, customerId, onNavigateBack, onNavigateToSubscription }) {
+function CustomerDetailPage({ themeMode }) {
+    const { customerId } = useParams();
+    const navigate = useNavigate();
     const isDark = themeMode === 'dark'
     const colors = getCustomerColors(isDark)
-    const [customer, setCustomer] = useState(null)
-    const [loading, setLoading] = useState(true)
-
-    useEffect(() => {
-        const fetchCustomer = async () => {
-            try {
-                setLoading(true)
-                const response = await fetch(`http://localhost:3001/api/customers/${customerId}`)
-
-                if (!response.ok) {
-                    throw new Error('Failed to fetch customer')
-                }
-
-                const data = await response.json()
-                setCustomer(data)
-            } catch (error) {
-                console.error('Error fetching customer:', error)
-            } finally {
-                setLoading(false)
-            }
-        }
-
-        if (customerId) {
-            fetchCustomer()
-        }
-    }, [customerId])
+    const { customer, loading } = useCustomer(customerId);
 
     if (loading) {
         return (
@@ -63,7 +42,7 @@ function CustomerDetailPage({ themeMode, customerId, onNavigateBack, onNavigateT
             >
                 <Link
                     component="button"
-                    onClick={onNavigateBack}
+                    onClick={() => navigate('/customers')}
                     sx={{
                         color: colors.accent,
                         fontSize: '0.875rem',
@@ -108,7 +87,7 @@ function CustomerDetailPage({ themeMode, customerId, onNavigateBack, onNavigateT
             >
                 {/* Left Column - Main Content */}
                 <Box>
-                    <CustomerSubscriptionsSection customer={customer} colors={colors} themeMode={themeMode} onNavigateToSubscription={onNavigateToSubscription} />
+                    <CustomerSubscriptionsSection customer={customer} colors={colors} themeMode={themeMode} onNavigateToSubscription={(subId) => navigate(`/subscriptions/${subId}`)} />
                     <CustomerInvoicesSection customer={customer} colors={colors} />
                     <CustomerCreditGrantsSection customer={customer} colors={colors} />
                     <CustomerRecentActivitySection customer={customer} colors={colors} />

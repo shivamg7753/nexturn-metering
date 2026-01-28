@@ -1,38 +1,18 @@
-import { useEffect, useState } from 'react'
-import { Box, Typography, Breadcrumbs, Link, Chip, IconButton, Button } from '@mui/material'
-import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import MoreVertIcon from '@mui/icons-material/MoreVert'
-import { getCustomerColors } from '../components/customers/themeUtils'
+import { useParams, useNavigate } from 'react-router-dom';
+import { Box, Typography, Breadcrumbs, Link, Chip, IconButton, Button } from '@mui/material';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import { getCustomerColors } from '../components/customers/themeUtils';
+import { useSubscription } from '../hooks/useSubscription';
+import { formatDateShort, formatDateTime } from '../utils/dateUtils';
+import { formatCurrency, formatBillingPeriod } from '../utils/priceFormatters';
 
-function SubscriptionDetailPage({ themeMode, subscriptionId, onNavigateBack }) {
+function SubscriptionDetailPage({ themeMode }) {
+    const { subscriptionId } = useParams();
+    const navigate = useNavigate();
     const isDark = themeMode === 'dark'
     const colors = getCustomerColors(isDark)
-    const [subscription, setSubscription] = useState(null)
-    const [loading, setLoading] = useState(true)
-
-    useEffect(() => {
-        const fetchSubscription = async () => {
-            try {
-                setLoading(true)
-                const response = await fetch(`http://localhost:3001/api/subscriptions/${subscriptionId}`)
-
-                if (!response.ok) {
-                    throw new Error('Failed to fetch subscription')
-                }
-
-                const data = await response.json()
-                setSubscription(data)
-            } catch (error) {
-                console.error('Error fetching subscription:', error)
-            } finally {
-                setLoading(false)
-            }
-        }
-
-        if (subscriptionId) {
-            fetchSubscription()
-        }
-    }, [subscriptionId])
+    const { subscription, loading } = useSubscription(subscriptionId);
 
     if (loading) {
         return (
@@ -50,28 +30,6 @@ function SubscriptionDetailPage({ themeMode, subscriptionId, onNavigateBack }) {
         )
     }
 
-    const formatDate = (dateString) => {
-        if (!dateString) return '—'
-        const date = new Date(dateString)
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    }
-
-    const formatDateTime = (dateString) => {
-        if (!dateString) return '—'
-        const date = new Date(dateString)
-        const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-        const timeStr = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
-        return `${dateStr}, ${timeStr}`
-    }
-
-    const formatCurrency = (amount, currency = 'USD') => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: currency,
-            minimumFractionDigits: 2
-        }).format(amount || 0)
-    }
-
     const calculateSubtotal = () => {
         if (!subscription || !subscription.products) return 0
         return subscription.products.reduce((sum, product) => {
@@ -85,12 +43,6 @@ function SubscriptionDetailPage({ themeMode, subscriptionId, onNavigateBack }) {
         return firstProduct.priceDetails?.currency || 'USD'
     }
 
-    const getBillingPeriod = (priceDetails) => {
-        if (!priceDetails) return 'month'
-        const period = priceDetails.billingPeriod || 'monthly'
-        return period.replace('ly', '').replace('every-', 'every ')
-    }
-
     return (
         <Box sx={{ bgcolor: colors.bg, minHeight: '100vh', p: 3 }}>
             {/* Breadcrumb */}
@@ -100,7 +52,7 @@ function SubscriptionDetailPage({ themeMode, subscriptionId, onNavigateBack }) {
             >
                 <Link
                     component="button"
-                    onClick={onNavigateBack}
+                    onClick={() => navigate(-1)}
                     sx={{
                         color: colors.accent,
                         fontSize: '0.875rem',
@@ -164,7 +116,7 @@ function SubscriptionDetailPage({ themeMode, subscriptionId, onNavigateBack }) {
                         Started
                     </Typography>
                     <Typography sx={{ color: colors.text, fontSize: '0.875rem' }}>
-                        {formatDate(subscription.createdAt)}
+                        {formatDateShort(subscription.startDate || subscription.createdAt)}
                     </Typography>
                 </Box>
                 <Box>
@@ -223,17 +175,17 @@ function SubscriptionDetailPage({ themeMode, subscriptionId, onNavigateBack }) {
                                                     {product.productName}
                                                 </Typography>
                                                 <Typography sx={{ color: colors.textSecondary, fontSize: '0.8125rem' }}>
-                                                    {formatCurrency(product.price, product.priceDetails?.currency)} / {getBillingPeriod(product.priceDetails)}
+                                                    {formatCurrency(product.price, product.priceDetails?.currency)} / {formatBillingPeriod(product.priceDetails)}
                                                 </Typography>
                                             </Box>
                                             <Box component="td" sx={{ p: 2, color: colors.text, fontSize: '0.875rem' }}>
-                                                {formatCurrency(product.price, product.priceDetails?.currency)} / {getBillingPeriod(product.priceDetails)}
+                                                {formatCurrency(product.price, product.priceDetails?.currency)} / {formatBillingPeriod(product.priceDetails)}
                                             </Box>
                                             <Box component="td" sx={{ p: 2, color: colors.text, fontSize: '0.875rem' }}>
                                                 {product.quantity}
                                             </Box>
                                             <Box component="td" sx={{ p: 2, color: colors.text, fontSize: '0.875rem' }}>
-                                                {formatCurrency(product.price * product.quantity, product.priceDetails?.currency)} / {getBillingPeriod(product.priceDetails)}
+                                                {formatCurrency(product.price * product.quantity, product.priceDetails?.currency)} / {formatBillingPeriod(product.priceDetails)}
                                             </Box>
                                             <Box component="td" sx={{ p: 2 }}>
                                                 <Typography sx={{ color: colors.accent, fontSize: '0.8125rem', fontFamily: 'monospace' }}>

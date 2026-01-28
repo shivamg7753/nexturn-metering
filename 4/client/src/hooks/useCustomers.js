@@ -1,43 +1,39 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react';
+import { fetchCustomers as fetchCustomersApi } from '../api/customerApi.js';
 
-export const useCustomers = () => {
-    const [customers, setCustomers] = useState([])
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState(null)
+/**
+ * useCustomers Hook
+ * Manages customer state and provides customer-related operations
+ */
+export function useCustomers() {
+    const [customers, setCustomers] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
-    const fetchCustomers = async () => {
+    const fetchCustomers = useCallback(async () => {
         try {
-            setLoading(true)
-            const response = await fetch('http://localhost:3001/api/customers')
-
-            if (!response.ok) {
-                // If endpoint doesn't exist yet, return empty array
-                if (response.status === 404) {
-                    setCustomers([])
-                    return
-                }
-                throw new Error('Failed to fetch customers')
-            }
-
-            const data = await response.json()
-            setCustomers(data)
+            setLoading(true);
+            setError(null);
+            const data = await fetchCustomersApi();
+            setCustomers(data);
         } catch (err) {
-            console.error('Error fetching customers:', err)
-            setError(err.message)
-            setCustomers([]) // Set empty array on error
+            console.error('Error fetching customers:', err);
+            setError(err.message);
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
-    }
+    }, []);
 
     useEffect(() => {
-        fetchCustomers()
-    }, [])
+        fetchCustomers();
+    }, [fetchCustomers]);
 
     return {
         customers,
         loading,
         error,
-        fetchCustomers,
-    }
+        fetchCustomers
+    };
 }
+
+export default useCustomers;

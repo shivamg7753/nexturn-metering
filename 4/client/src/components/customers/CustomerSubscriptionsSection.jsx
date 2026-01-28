@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Box, Typography, Button } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import AddSubscriptionDrawer from './AddSubscriptionDrawer'
+import { fetchSubscriptions as fetchSubscriptionsApi } from '../../api/subscriptionApi'
 
 function CustomerSubscriptionsSection({ customer, colors, themeMode, onNavigateToSubscription }) {
     const [drawerOpen, setDrawerOpen] = useState(false)
@@ -17,11 +18,8 @@ function CustomerSubscriptionsSection({ customer, colors, themeMode, onNavigateT
     const fetchSubscriptions = async () => {
         try {
             setLoading(true)
-            const response = await fetch(`http://localhost:3001/api/subscriptions?customerId=${customer.id}`)
-            if (response.ok) {
-                const data = await response.json()
-                setSubscriptions(data)
-            }
+            const data = await fetchSubscriptionsApi(customer.id)
+            setSubscriptions(data)
         } catch (error) {
             console.error('Error fetching subscriptions:', error)
         } finally {

@@ -8,15 +8,17 @@ import {
     ListItemText,
     IconButton,
     InputBase,
-} from '@mui/material'
-import SearchIcon from '@mui/icons-material/Search'
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
-import BoltIcon from '@mui/icons-material/Bolt'
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
-import { mainMenuItems, shortcutItems, productMenuItems } from '../constants/menuItems.jsx'
-import { gradientBg, getThemeColors } from '../theme/styles'
+} from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import SearchIcon from '@mui/icons-material/Search';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import BoltIcon from '@mui/icons-material/Bolt';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import { mainMenuItems, shortcutItems, productMenuItems } from '../constants/menuItems.jsx';
+import { gradientBg, getThemeColors } from '../theme/styles';
 
-function Sidebar({ activePage, onNavigate, themeMode }) {
+function Sidebar({ activePage, themeMode }) {
+    const navigate = useNavigate();
     const isActive = (key) => activePage === key
     const isDark = themeMode === 'dark'
     const colors = getThemeColors(themeMode)
@@ -127,7 +129,7 @@ function Sidebar({ activePage, onNavigate, themeMode }) {
                 {mainMenuItems.map((item) => (
                     <ListItem key={item.key} disablePadding sx={{ mb: 0.5 }}>
                         <ListItemButton
-                            onClick={() => onNavigate(item.key)}
+                            onClick={() => navigate(`/${item.key}`)}
                             sx={{
                                 py: 1.2,
                                 px: 2,
@@ -185,7 +187,7 @@ function Sidebar({ activePage, onNavigate, themeMode }) {
                 {shortcutItems.map((item) => (
                     <ListItem key={item.key} disablePadding sx={{ mb: 0.3 }}>
                         <ListItemButton
-                            onClick={() => onNavigate(item.key)}
+                            onClick={() => navigate(`/${item.key}`)}
                             sx={{
                                 py: 1,
                                 px: 2,
@@ -234,7 +236,7 @@ function Sidebar({ activePage, onNavigate, themeMode }) {
                 {productMenuItems.map((item) => (
                     <ListItem key={item.key} disablePadding sx={{ mb: 0.3 }}>
                         <ListItemButton
-                            onClick={() => onNavigate(item.key)}
+                            onClick={() => navigate(`/${item.key}`)}
                             sx={{
                                 py: 1,
                                 px: 2,

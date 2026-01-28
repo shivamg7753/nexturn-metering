@@ -45,17 +45,17 @@ const USAGE_TYPES = [
     {
         value: 'per-unit',
         label: 'Per unit',
-        description: 'Price by number of users, units, or seats.',
+        description: 'Charge a fixed price for each unit of usage. Perfect for metered billing based on API calls, active users, storage consumed, or any measurable metric.',
     },
     {
         value: 'per-package',
         label: 'Per package',
-        description: 'Price by package, bundle, or group of units.',
+        description: 'Price by package, bundle, or group of units. Customers pay per bundle regardless of actual usage within that package.',
     },
     {
         value: 'per-tier',
         label: 'Per tier',
-        description: 'Price based on quantity.',
+        description: 'Price based on quantity tiers. Use volume pricing (all units at tier rate) or graduated pricing (each tier priced separately).',
     },
 ]
 

@@ -13,7 +13,7 @@ const initialState = {
     tiers: [{ upTo: null, unitPrice: '', flatFee: '' }],
 
     // Usage-based
-    usageType: 'metered',
+    usageType: 'per-unit',
     tierMode: 'graduated',
     meter: '',
 
@@ -29,8 +29,11 @@ const initialState = {
     includeTaxInPrice: 'auto',
 }
 
-export function useAdvancedPricing() {
-    const [pricingData, setPricingData] = useState(initialState)
+export function useAdvancedPricing(initialData = {}) {
+    const [pricingData, setPricingData] = useState(() => ({
+        ...initialState,
+        ...initialData,
+    }))
     const [errors, setErrors] = useState({})
 
     const updateField = useCallback((field, value) => {

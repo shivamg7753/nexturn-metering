@@ -1,6 +1,7 @@
 import { Box, Typography, IconButton, Menu, MenuItem } from '@mui/material'
 import MoreVertIcon from '@mui/icons-material/MoreVert'
 import { useState } from 'react'
+import { formatPriceDisplay, getPricingDescription } from '../../utils/priceFormatters'
 
 function MultiplePricesDisplay({ prices = [], onEditPrice, onDeletePrice, colors, isDark }) {
     const [anchorEl, setAnchorEl] = useState(null)
@@ -30,29 +31,6 @@ function MultiplePricesDisplay({ prices = [], onEditPrice, onDeletePrice, colors
         handleMenuClose()
     }
 
-    const formatPriceDisplay = (price) => {
-        const amount = price.amount || '0.00'
-        const currency = price.currency || 'INR'
-        const currencySymbol = currency === 'INR' ? '₹' : currency === 'USD' ? '$' : currency
-
-        let displayText = `Starts at ${currencySymbol}${amount}`
-
-        if (price.pricingType === 'recurring' && price.billingPeriod) {
-            const periodMap = {
-                'daily': 'day',
-                'weekly': 'week',
-                'monthly': 'month',
-                'yearly': 'year',
-                'every-3-months': '3 months',
-                'every-6-months': '6 months',
-            }
-            const period = periodMap[price.billingPeriod] || price.billingPeriod
-            displayText += ` Per ${period}`
-        }
-
-        return displayText
-    }
-
     if (!prices || prices.length === 0) {
         return null
     }
@@ -73,7 +51,7 @@ function MultiplePricesDisplay({ prices = [], onEditPrice, onDeletePrice, colors
                     key={index}
                     sx={{
                         display: 'flex',
-                        alignItems: 'center',
+                        alignItems: 'flex-start',
                         justifyContent: 'space-between',
                         p: 2,
                         mb: 1.5,
@@ -122,9 +100,36 @@ function MultiplePricesDisplay({ prices = [], onEditPrice, onDeletePrice, colors
                             <Typography sx={{
                                 fontSize: 12,
                                 color: colors.textSecondary,
+                                mb: (price.pricingModel === 'tiered' || price.pricingModel === 'graduated' || price.pricingModel === 'volume') && price.tiers ? 1 : 0
                             }}>
-                                {price.pricingModel.replace('-', ' ')} • {price.pricingType}
+                                {getPricingDescription(price)}
                             </Typography>
+                        )}
+
+
+                        {/* Display all tiers for tiered/graduated/volume pricing */}
+                        {(price.pricingModel === 'tiered' || price.pricingModel === 'graduated' || price.pricingModel === 'volume') && price.tiers && price.tiers.length > 0 && (
+                            <Box sx={{ mt: 1, pl: 0, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                                {price.tiers.map((tier, tierIndex) => {
+                                    const currencySymbol = price.currency === 'INR' ? '₹' : price.currency === 'USD' ? '$' : price.currency || 'INR'
+                                    const tierPrice = tier.unitPrice || tier.flatFee || '0.00'
+
+                                    // Calculate first unit: 1 for first tier, or previous tier's upTo + 1
+                                    const firstUnit = tierIndex === 0 ? 1 : (price.tiers[tierIndex - 1]?.upTo ? price.tiers[tierIndex - 1].upTo + 1 : 1)
+                                    // Last unit is upTo, or ∞ if null/undefined
+                                    const lastUnit = tier.upTo === null || tier.upTo === undefined || tier.upTo === '' ? '∞' : tier.upTo
+
+                                    return (
+                                        <Typography key={tierIndex} sx={{
+                                            fontSize: 11,
+                                            color: colors.textSecondary,
+                                            fontFamily: 'monospace',
+                                        }}>
+                                            {firstUnit}-{lastUnit} units: {currencySymbol}{tierPrice}/unit
+                                        </Typography>
+                                    )
+                                })}
+                            </Box>
                         )}
                     </Box>
 

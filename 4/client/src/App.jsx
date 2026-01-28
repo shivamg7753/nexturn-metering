@@ -1,121 +1,33 @@
-import { useState, useEffect } from 'react'
-import Layout from './components/Layout'
-import HomePage from './pages/HomePage'
-import UsageBillingPage from './pages/UsageBillingPage'
-import ProductCataloguePage from './pages/ProductCataloguePage'
-import CustomersPage from './pages/CustomersPage'
-import CustomerDetailPage from './pages/CustomerDetailPage'
-import SubscriptionDetailPage from './pages/SubscriptionDetailPage'
-import ProductDetailPage from './pages/ProductDetailPage'
-import PlaceholderPage from './pages/PlaceholderPage'
-import './App.css'
+import { useState, useEffect } from 'react';
+import { RouterProvider } from 'react-router-dom';
+import { createAppRouter } from './routes';
+import './App.css';
 
+/**
+ * Main Application Component
+ * Manages theme state and provides router
+ */
 function App() {
-  const [activePage, setActivePage] = useState('usage-billing')
-  const [selectedCustomerId, setSelectedCustomerId] = useState(null)
-  const [selectedSubscriptionId, setSelectedSubscriptionId] = useState(null)
-  const [selectedProductId, setSelectedProductId] = useState(null)
   // Initialize theme from localStorage, default to 'dark' if not set
   const [themeMode, setThemeMode] = useState(() => {
-    const savedTheme = localStorage.getItem('themeMode')
-    return savedTheme || 'dark'
-  })
+    const savedTheme = localStorage.getItem('themeMode');
+    return savedTheme || 'dark';
+  });
 
   // Update data-theme attribute for CSS variables and save to localStorage
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', themeMode)
-    localStorage.setItem('themeMode', themeMode)
-  }, [themeMode])
+    document.documentElement.setAttribute('data-theme', themeMode);
+    localStorage.setItem('themeMode', themeMode);
+  }, [themeMode]);
 
   const handleThemeToggle = () => {
-    setThemeMode(prev => prev === 'dark' ? 'light' : 'dark')
-  }
+    setThemeMode(prev => prev === 'dark' ? 'light' : 'dark');
+  };
 
-  const handleNavigateToCustomer = (customerId) => {
-    setSelectedCustomerId(customerId)
-    setActivePage('customer-detail')
-  }
+  // Create router with theme props
+  const router = createAppRouter(themeMode, handleThemeToggle);
 
-  const handleNavigateBackToCustomers = () => {
-    setSelectedCustomerId(null)
-    setActivePage('customers')
-  }
-
-  const handleNavigateToSubscription = (subscriptionId) => {
-    setSelectedSubscriptionId(subscriptionId)
-    setActivePage('subscription-detail')
-  }
-
-  const handleNavigateBackFromSubscription = () => {
-    setSelectedSubscriptionId(null)
-    // Navigate back to the customer detail if we have a customer ID
-    if (selectedCustomerId) {
-      setActivePage('customer-detail')
-    } else {
-      setActivePage('customers')
-    }
-  }
-
-  const handleNavigateToProduct = (product) => {
-    setSelectedProductId(product.id)
-    setActivePage('product-detail')
-  }
-
-  const handleNavigateBackToProducts = () => {
-    setSelectedProductId(null)
-    setActivePage('products')
-  }
-
-
-  const renderPage = () => {
-    switch (activePage) {
-      case 'home':
-        return <HomePage themeMode={themeMode} />
-      case 'balances':
-        return <PlaceholderPage title="Balances" description="View and manage account balances" themeMode={themeMode} />
-      case 'transactions':
-        return <PlaceholderPage title="Transactions" description="View transaction history" themeMode={themeMode} />
-      case 'customers':
-        return <CustomersPage themeMode={themeMode} onNavigateToCustomer={handleNavigateToCustomer} />
-      case 'customer-detail':
-        return <CustomerDetailPage themeMode={themeMode} customerId={selectedCustomerId} onNavigateBack={handleNavigateBackToCustomers} onNavigateToSubscription={handleNavigateToSubscription} />
-      case 'subscription-detail':
-        return <SubscriptionDetailPage themeMode={themeMode} subscriptionId={selectedSubscriptionId} onNavigateBack={handleNavigateBackFromSubscription} />
-      case 'products':
-        return <ProductCataloguePage themeMode={themeMode} onNavigateToProduct={handleNavigateToProduct} />
-      case 'product-detail':
-        return <ProductDetailPage themeMode={themeMode} productId={selectedProductId} onNavigateBack={handleNavigateBackToProducts} />
-      case 'revenue':
-        return <PlaceholderPage title="Revenue Recovery" description="Track and recover revenue" themeMode={themeMode} />
-      case 'usage-billing':
-        return <UsageBillingPage themeMode={themeMode} />
-      case 'billing-overview':
-        return <PlaceholderPage title="Billing Overview" description="View billing summary and metrics" themeMode={themeMode} />
-      case 'invoices':
-        return <PlaceholderPage title="Invoices" description="Manage and view invoices" themeMode={themeMode} />
-      case 'subscriptions':
-        return <PlaceholderPage title="Subscriptions" description="Manage customer subscriptions" themeMode={themeMode} />
-      case 'payments':
-        return <PlaceholderPage title="Payments" description="View and manage payments" themeMode={themeMode} />
-      case 'billing':
-        return <PlaceholderPage title="Billing" description="Configure billing settings" themeMode={themeMode} />
-      case 'reporting':
-        return <PlaceholderPage title="Reporting" description="View reports and analytics" themeMode={themeMode} />
-      default:
-        return <HomePage themeMode={themeMode} />
-    }
-  }
-
-  return (
-    <Layout
-      activePage={activePage}
-      onNavigate={setActivePage}
-      themeMode={themeMode}
-      onThemeToggle={handleThemeToggle}
-    >
-      {renderPage()}
-    </Layout>
-  )
+  return <RouterProvider router={router} />;
 }
 
-export default App
+export default App;

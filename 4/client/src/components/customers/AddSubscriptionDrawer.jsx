@@ -150,6 +150,16 @@ function AddSubscriptionDrawer({ open, onClose, customer, themeMode, onSuccess }
             // selectedProduct is now the Option object { product, price, ... }
             const { product, price, priceIndex } = formData.selectedProduct
 
+            // Check if this exact product+price combination already exists
+            const isDuplicate = formData.products.some(
+                p => p.productId === (product.id || product._id) && p.priceIndex === priceIndex
+            );
+
+            if (isDuplicate) {
+                console.warn('This product is already added to the subscription');
+                return;
+            }
+
             // Extract details from the specific selected price
             let finalPrice = 0
             if (price.pricingModel === 'flat-rate') {
@@ -172,12 +182,12 @@ function AddSubscriptionDrawer({ open, onClose, customer, themeMode, onSuccess }
                 priceIndex: priceIndex // Pass the index to the backend
             }
 
-            setFormData({
-                ...formData,
-                products: [...formData.products, newProduct],
+            setFormData(prev => ({
+                ...prev,
+                products: [...prev.products, newProduct],
                 selectedProduct: null,
                 quantity: 1
-            })
+            }))
         }
     }
 
@@ -370,6 +380,11 @@ function AddSubscriptionDrawer({ open, onClose, customer, themeMode, onSuccess }
                             <Autocomplete
                                 value={formData.selectedProduct}
                                 onChange={async (e, newValue) => {
+                                    // Prevent setting the same value twice
+                                    if (newValue === formData.selectedProduct) {
+                                        return;
+                                    }
+
                                     if (typeof newValue === 'string') {
                                         // Timeout to avoid interference
                                         setTimeout(() => {
@@ -379,10 +394,10 @@ function AddSubscriptionDrawer({ open, onClose, customer, themeMode, onSuccess }
                                         // Create a new value from the user input
                                         const newOption = await createProductOnTheFly(newValue.inputValue);
                                         if (newOption) {
-                                            setFormData({ ...formData, selectedProduct: newOption });
+                                            setFormData(prev => ({ ...prev, selectedProduct: newOption }));
                                         }
                                     } else {
-                                        setFormData({ ...formData, selectedProduct: newValue });
+                                        setFormData(prev => ({ ...prev, selectedProduct: newValue }));
                                     }
                                 }}
                                 filterOptions={(options, params) => {

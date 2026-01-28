@@ -1,8 +1,9 @@
-import { useState } from 'react'
-import { Box, LinearProgress, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material'
-import { useProducts } from '../hooks/useProducts'
-import { useMeters } from '../hooks/useMeters'
-import { useMeterForm } from '../hooks/useMeterForm'
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Box, LinearProgress } from '@mui/material';
+import { useProducts } from '../hooks/useProducts';
+import { useMeters } from '../hooks/useMeters';
+import { useMeterForm } from '../hooks/useMeterForm';
 import {
     PageHeader,
     NavigationTabs,
@@ -11,14 +12,17 @@ import {
     ProductsTable,
     Pagination,
     AddProductDrawer,
-} from '../components/products'
-import MeterFormDrawer from '../components/meters/MeterFormDrawer'
-import { getProductCatalogueColors } from '../components/products/themeUtils'
+} from '../components/products';
+import MeterFormDrawer from '../components/meters/MeterFormDrawer';
+import { getProductCatalogueColors } from '../components/products/themeUtils';
+import * as productApi from '../api/productApi';
+import ConfirmDialog from '../components/common/ConfirmDialog';
 
-const ROWS_PER_PAGE = 10
+const ROWS_PER_PAGE = 10;
 
-function ProductCataloguePage({ themeMode, onNavigateToProduct }) {
-    const { products, loading, statusFilter, setStatusFilter, counts, fetchProducts } = useProducts()
+function ProductCataloguePage({ themeMode }) {
+    const navigate = useNavigate();
+    const { products, loading, statusFilter, setStatusFilter, counts, fetchProducts } = useProducts();
     const { meters, createMeter } = useMeters()
     const meterForm = useMeterForm()
     const [activeTab, setActiveTab] = useState(0)
@@ -84,19 +88,11 @@ function ProductCataloguePage({ themeMode, onNavigateToProduct }) {
                 prices: productData.advancedPricing ? [productData.advancedPricing] : []
             }
 
-            const isEditing = !!editingProduct
-            const url = isEditing
-                ? `http://localhost:3001/api/products/${editingProduct.id}`
-                : 'http://localhost:3001/api/products'
-            const method = isEditing ? 'PUT' : 'POST'
-
-            const response = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            })
-
-            if (!response.ok) throw new Error(`Failed to ${isEditing ? 'update' : 'create'} product`)
+            if (isEditing) {
+                await productApi.updateProduct(editingProduct.id, payload);
+            } else {
+                await productApi.createProduct(payload);
+            }
 
             // Refresh the products list
             fetchProducts()
@@ -117,11 +113,7 @@ function ProductCataloguePage({ themeMode, onNavigateToProduct }) {
 
     const handleEditProduct = async (product) => {
         try {
-            // Fetch full product details from API
-            const response = await fetch(`http://localhost:3001/api/products/${product.id}`)
-            if (!response.ok) throw new Error('Failed to fetch product details')
-
-            const fullProduct = await response.json()
+            const fullProduct = await productApi.fetchProductById(product.id)
             setEditingProduct(fullProduct)
             setDrawerOpen(true)
         } catch (error) {
@@ -138,12 +130,7 @@ function ProductCataloguePage({ themeMode, onNavigateToProduct }) {
         if (!productToDelete) return
 
         try {
-            const response = await fetch(`http://localhost:3001/api/products/${productToDelete.id}`, {
-                method: 'DELETE',
-            })
-
-            if (!response.ok) throw new Error('Failed to delete product')
-
+            await productApi.deleteProduct(productToDelete.id)
             // Refresh the products list
             fetchProducts()
             setDeleteDialogOpen(false)
@@ -154,9 +141,13 @@ function ProductCataloguePage({ themeMode, onNavigateToProduct }) {
     }
 
     const handleCancelDelete = () => {
-        setDeleteDialogOpen(false)
-        setProductToDelete(null)
-    }
+        setDeleteDialogOpen(false);
+        setProductToDelete(null);
+    };
+
+    const handleProductClick = (product) => {
+        navigate(`/products/${product.id}`);
+    };
 
     return (
         <Box sx={{ bgcolor: colors.bg, minHeight: '100vh', p: 3 }}>
@@ -204,7 +195,7 @@ function ProductCataloguePage({ themeMode, onNavigateToProduct }) {
                 colors={colors}
                 isDark={isDark}
                 onProductAction={handleProductAction}
-                onProductClick={onNavigateToProduct}
+                onProductClick={handleProductClick}
                 onEditProduct={handleEditProduct}
                 onDeleteProduct={handleDeleteProduct}
             />
@@ -229,59 +220,17 @@ function ProductCataloguePage({ themeMode, onNavigateToProduct }) {
             />
 
             {/* Delete Confirmation Dialog */}
-            <Dialog
+            <ConfirmDialog
                 open={deleteDialogOpen}
                 onClose={handleCancelDelete}
-                PaperProps={{
-                    sx: {
-                        bgcolor: colors.cardBg,
-                        border: `1px solid ${colors.border}`,
-                        borderRadius: 2,
-                        minWidth: 400,
-                    }
-                }}
-            >
-                <DialogTitle sx={{ color: colors.text, fontWeight: 600 }}>
-                    Delete Product
-                </DialogTitle>
-                <DialogContent>
-                    <DialogContentText sx={{ color: colors.textSecondary }}>
-                        Are you sure you want to delete "{productToDelete?.name}"? This action cannot be undone.
-                    </DialogContentText>
-                </DialogContent>
-                <DialogActions sx={{ px: 3, pb: 2 }}>
-                    <Button
-                        onClick={handleCancelDelete}
-                        sx={{
-                            color: colors.textSecondary,
-                            textTransform: 'none',
-                            fontWeight: 500,
-                            '&:hover': {
-                                bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
-                            }
-                        }}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={handleConfirmDelete}
-                        variant="contained"
-                        sx={{
-                            bgcolor: '#ef4444',
-                            color: '#fff',
-                            textTransform: 'none',
-                            fontWeight: 600,
-                            boxShadow: 'none',
-                            '&:hover': {
-                                bgcolor: '#dc2626',
-                                boxShadow: 'none',
-                            }
-                        }}
-                    >
-                        Delete
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                onConfirm={handleConfirmDelete}
+                title="Delete Product"
+                message={`Are you sure you want to delete "${productToDelete?.name}"? This action cannot be undone.`}
+                confirmText="Delete"
+                cancelText="Cancel"
+                variant="danger"
+                themeMode={themeMode}
+            />
 
             {/* Meter Form Drawer */}
             <MeterFormDrawer
