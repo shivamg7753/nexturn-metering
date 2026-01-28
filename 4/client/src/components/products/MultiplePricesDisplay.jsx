@@ -107,8 +107,8 @@ function MultiplePricesDisplay({ prices = [], onEditPrice, onDeletePrice, colors
                         )}
 
 
-                        {/* Display all tiers for tiered/graduated/volume pricing */}
-                        {(price.pricingModel === 'tiered' || price.pricingModel === 'graduated' || price.pricingModel === 'volume') && price.tiers && price.tiers.length > 0 && (
+                        {/* Display all tiers for tiered/graduated/volume or usage-based pricing */}
+                        {(['tiered', 'graduated', 'volume'].includes(price.pricingModel) || (price.pricingModel === 'usage-based' && price.usageType === 'per-tier')) && price.tiers && price.tiers.length > 0 && (
                             <Box sx={{ mt: 1, pl: 0, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                                 {price.tiers.map((tier, tierIndex) => {
                                     const currencySymbol = price.currency === 'INR' ? '₹' : price.currency === 'USD' ? '$' : price.currency || 'INR'

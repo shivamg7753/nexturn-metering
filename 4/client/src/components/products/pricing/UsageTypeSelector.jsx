@@ -24,7 +24,7 @@ const TIER_MODES = [
     { value: 'graduated', label: 'Graduated', description: 'Units in each tier priced at that tier\'s rate.' },
 ]
 
-function UsageTypeSelector({ usageType, tierMode, onUsageTypeChange, onTierModeChange, colors }) {
+function UsageTypeSelector({ usageType, tieredType, onUsageTypeChange, onTieredTypeChange, colors }) {
     return (
         <Box sx={{ mb: 3 }}>
             {/* Usage Type Dropdown */}
@@ -95,8 +95,8 @@ function UsageTypeSelector({ usageType, tierMode, onUsageTypeChange, onTierModeC
                 <Box>
                     <FormControl fullWidth size="small">
                         <Select
-                            value={tierMode}
-                            onChange={(e) => onTierModeChange(e.target.value)}
+                            value={tieredType}
+                            onChange={(e) => onTieredTypeChange(e.target.value)}
                             sx={{
                                 bgcolor: colors.inputBg,
                                 borderRadius: 1.5,
@@ -122,7 +122,7 @@ function UsageTypeSelector({ usageType, tierMode, onUsageTypeChange, onTierModeC
 
                     {/* Tier Mode Description */}
                     <Typography sx={{ fontSize: 12, color: colors.textSecondary, mt: 1 }}>
-                        {TIER_MODES.find(m => m.value === tierMode)?.description}
+                        {TIER_MODES.find(m => m.value === tieredType)?.description}
                         {' Needs a record for Stripe to track customer service usage. '}
                         <Box component="span" sx={{ color: '#7c3aed', cursor: 'pointer', fontWeight: 500 }}>
                             View docs

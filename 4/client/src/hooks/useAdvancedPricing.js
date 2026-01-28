@@ -14,7 +14,7 @@ const initialState = {
 
     // Usage-based
     usageType: 'per-unit',
-    tierMode: 'graduated',
+    tieredType: 'graduated',
     meter: '',
 
     // Package pricing
@@ -50,13 +50,13 @@ export function useAdvancedPricing(initialData = {}) {
     const addTier = useCallback(() => {
         setPricingData(prev => {
             const lastTier = prev.tiers[prev.tiers.length - 1]
-            const newFirstUnit = lastTier ? String(parseInt(lastTier.lastUnit) + 1 || prev.tiers.length + 1) : '1'
+            const prevUpTo = parseInt(lastTier?.upTo) || prev.tiers.length
             return {
                 ...prev,
                 tiers: [
                     ...prev.tiers.slice(0, -1),
-                    { ...prev.tiers[prev.tiers.length - 1], lastUnit: String(parseInt(newFirstUnit) - 1) },
-                    { firstUnit: newFirstUnit, lastUnit: '∞', perUnit: '', flatFee: '' },
+                    { ...prev.tiers[prev.tiers.length - 1], upTo: prevUpTo },
+                    { upTo: null, unitPrice: '', flatFee: '' },
                 ],
             }
         })
@@ -99,22 +99,28 @@ export function useAdvancedPricing(initialData = {}) {
                 break
             case 'tiered':
             case 'usage-based':
+                if (pricingData.pricingModel === 'usage-based' && pricingData.usageType !== 'per-tier') {
+                    subtotal = (parseFloat(pricingData.amount) || 0) * unitQuantity
+                    break
+                }
+
                 // Calculate based on tiers
                 let remaining = unitQuantity
-                for (const tier of pricingData.tiers) {
-                    const firstUnit = parseInt(tier.firstUnit) || 1
-                    const lastUnit = tier.lastUnit === '∞' ? Infinity : parseInt(tier.lastUnit)
-                    const perUnit = parseFloat(tier.perUnit) || 0
+                for (let i = 0; i < pricingData.tiers.length; i++) {
+                    const tier = pricingData.tiers[i]
+                    const firstUnit = i === 0 ? 1 : (parseInt(pricingData.tiers[i - 1].upTo) + 1 || 1)
+                    const lastUnit = tier.upTo === null || tier.upTo === undefined ? Infinity : parseInt(tier.upTo)
+                    const unitPrice = parseFloat(tier.unitPrice) || 0
                     const flatFee = parseFloat(tier.flatFee) || 0
 
                     if (remaining > 0) {
                         const unitsInTier = Math.min(remaining, lastUnit - firstUnit + 1)
-                        if (pricingData.tierMode === 'volume') {
+                        if (pricingData.tieredType === 'volume' || pricingData.tierMode === 'volume') {
                             // Volume: all units at this tier's rate
-                            subtotal = (perUnit * unitQuantity) + flatFee
+                            subtotal = (unitPrice * unitQuantity) + flatFee
                         } else {
                             // Graduated: each tier's units at tier's rate
-                            subtotal += (perUnit * unitsInTier) + flatFee
+                            subtotal += (unitPrice * unitsInTier) + flatFee
                         }
                         remaining -= unitsInTier
                     }

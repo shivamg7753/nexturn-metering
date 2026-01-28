@@ -51,7 +51,7 @@ export const formatPriceDisplay = (price) => {
     const currency = price.currency || 'INR';
 
     // For tiered, graduated, or volume pricing, get the first tier's price
-    if (['tiered', 'graduated', 'volume'].includes(price.pricingModel) && price.tiers && price.tiers.length > 0) {
+    if ((['tiered', 'graduated', 'volume'].includes(price.pricingModel) || (price.pricingModel === 'usage-based' && price.usageType === 'per-tier')) && price.tiers && price.tiers.length > 0) {
         amount = price.tiers[0].unitPrice || price.tiers[0].flatFee || '0.00';
     }
 
@@ -59,6 +59,11 @@ export const formatPriceDisplay = (price) => {
 
     // For package pricing, show "per X units" instead of billing period
     if (price.pricingModel === 'package') {
+        const packageQty = price.packageQuantity || 1;
+        displayText += ` per ${packageQty} unit${packageQty > 1 ? 's' : ''}`;
+    }
+    // For package usage-based pricing
+    else if (price.pricingModel === 'usage-based' && price.usageType === 'per-package') {
         const packageQty = price.packageQuantity || 1;
         displayText += ` per ${packageQty} unit${packageQty > 1 ? 's' : ''}`;
     }
@@ -90,8 +95,8 @@ export const getPricingDescription = (price) => {
         } else if (price.usageType === 'per-package') {
             parts.push('per package');
         } else if (price.usageType === 'per-tier') {
-            if (['graduated', 'volume'].includes(price.tierMode)) {
-                parts.push(price.tierMode);
+            if (['graduated', 'volume'].includes(price.tieredType || price.tierMode)) {
+                parts.push(price.tieredType || price.tierMode);
             }
         }
 
@@ -101,13 +106,13 @@ export const getPricingDescription = (price) => {
             parts.push('usage based');
         }
     } else if (price.pricingModel === 'tiered') {
-        if (['graduated', 'volume'].includes(price.tierMode)) {
-            parts.push(price.tierMode);
+        if (['graduated', 'volume'].includes(price.tieredType || price.tierMode)) {
+            parts.push(price.tieredType || price.tierMode);
         } else {
             parts.push('tiered');
         }
     } else if (price.pricingModel === 'package') {
-        parts.push(`package (${price.packageSize || 'N/A'} units)`);
+        parts.push(`package (${price.packageQuantity || price.packageSize || 'N/A'} units)`);
     } else {
         parts.push(price.pricingModel.replace('-', ' '));
     }
