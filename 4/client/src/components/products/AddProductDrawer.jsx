@@ -28,8 +28,14 @@ function AddProductDrawer({
     useEffect(() => {
         if (open) {
             setCurrentScreen(mode === 'price-only' ? 'pricing' : 'basic')
+
+            // If in price-only mode and we have an editProduct, 
+            // we're editing the first (and only) price passed in the prices array
+            if (mode === 'price-only' && editProduct?.prices?.length > 0) {
+                setEditingPriceIndex(0)
+            }
         }
-    }, [open, mode])
+    }, [open, mode, editProduct])
 
     const colors = {
         ...baseColors,

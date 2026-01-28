@@ -18,12 +18,12 @@ const priceSchema = new mongoose.Schema({
     }],
 
     // For usage-based pricing
-    usageType: { type: String, enum: ['metered', 'licensed', 'per-tier'] },
-    tierMode: { type: String, enum: ['graduated', 'volume'] },
+    usageType: { type: String, enum: ['per-unit', 'per-package', 'per-tier'] },
+    tieredType: { type: String, enum: ['graduated', 'volume'] },
     meter: { type: String }, // Meter ID reference
 
     // For package pricing
-    packageSize: { type: Number },
+    packageQuantity: { type: Number },
 
     // For customer-chooses-price
     minimumAmount: { type: Number },

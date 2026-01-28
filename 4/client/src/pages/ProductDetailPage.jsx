@@ -156,7 +156,7 @@ function ProductDetailPage({ themeMode }) {
 
             <Grid container spacing={4}>
                 {/* Left Column */}
-                <Grid item xs={12} md={8}>
+                <Grid size={{ xs: 12, md: 8 }}>
                     {/* Pricing Section */}
                     <Box sx={{ mb: 6 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -324,7 +324,7 @@ function ProductDetailPage({ themeMode }) {
                 </Grid>
 
                 {/* Right Column - Details */}
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                     <Box sx={{ mb: 4 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                             <Typography variant="h6" sx={{ fontSize: 16, fontWeight: 600, color: colors.text }}>
