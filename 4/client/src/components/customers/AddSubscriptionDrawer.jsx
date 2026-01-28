@@ -14,6 +14,7 @@ import {
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'
+import { formatPriceDisplay, getPricingDescription } from '../../utils/priceFormatters'
 
 const filter = createFilterOptions()
 
@@ -65,21 +66,9 @@ function AddSubscriptionDrawer({ open, onClose, customer, themeMode, onSuccess }
     }
 
     const formatPriceLabel = (price) => {
-        const currency = price.currency || 'USD'
-        const amount = price.amount || 0
-        const period = price.billingPeriod || 'month'
-
-        // Simple symbol logic
-        const currencySymbol = (currency === 'USD') ? '$' : (currency === 'EUR' ? '€' : currency + ' ')
-
-        if (price.pricingModel === 'flat-rate') {
-            return `${currencySymbol}${amount.toFixed(2)} ${currency} / ${period}`
-        } else if (['tiered', 'graduated', 'volume'].includes(price.pricingModel)) {
-            const firstTier = price.tiers && price.tiers.length > 0 ? price.tiers[0] : {}
-            const unitPrice = firstTier.unitPrice || firstTier.flatFee || 0
-            return `Starts at ${currencySymbol}${unitPrice.toFixed(2)} ${currency} per unit / ${period}`
-        }
-        return `${price.pricingModel} • ${currencySymbol}${amount} / ${period}`
+        const priceDisplay = formatPriceDisplay(price)
+        const pricingDescription = getPricingDescription(price)
+        return `${price.productName || ''}\n${pricingDescription} • ${price.currency || 'INR'} ${price.amount || formatPriceDisplay(price).split(' ')[2]} / ${price.billingPeriod || 'monthly'}`
     }
 
     const productOptions = products.reduce((acc, product) => {
