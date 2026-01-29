@@ -52,13 +52,41 @@ export const formatPriceDisplay = (price) => {
 
     // For tiered, graduated, or volume pricing, get the first tier's price
     if ((['tiered', 'graduated', 'volume'].includes(price.pricingModel) || (price.pricingModel === 'usage-based' && price.usageType === 'per-tier')) && price.tiers && price.tiers.length > 0) {
-        amount = price.tiers[0].unitPrice || price.tiers[0].flatFee || '0.00';
+        const firstTier = price.tiers[0];
+        const unitPrice = firstTier.unitPrice || 0;
+        const flatFee = firstTier.flatFee || 0;
+
+        // If both unitPrice and flatFee exist, show in format: "per unit + flat fee / period"
+        if (unitPrice > 0 && flatFee > 0) {
+            const period = BILLING_PERIOD_MAP[price.billingPeriod] || price.billingPeriod || 'month';
+            return `Starts at ${formatCurrency(unitPrice, currency)} per unit + ${formatCurrency(flatFee, currency)} / ${period}`;
+        }
+        // Otherwise use the first non-zero value
+        amount = unitPrice || flatFee || '0.00';
     }
 
     let displayText = `Starts at ${formatCurrency(amount, currency)}`;
 
     // For package pricing, show "per X units" instead of billing period
     if (price.pricingModel === 'package') {
+        // Check if package pricing has tiers with dual pricing (unitPrice + flatFee)
+        if (price.tiers && price.tiers.length > 0) {
+            const firstTier = price.tiers[0];
+            const unitPrice = firstTier.unitPrice || 0;
+            const flatFee = firstTier.flatFee || 0;
+
+            // If both unitPrice and flatFee exist, show in dual format
+            if (unitPrice > 0 && flatFee > 0) {
+                const period = BILLING_PERIOD_MAP[price.billingPeriod] || price.billingPeriod || 'month';
+                return `Starts at ${formatCurrency(unitPrice, currency)} per unit + ${formatCurrency(flatFee, currency)} / ${period}`;
+            }
+            // If only one exists, use it
+            if (unitPrice > 0 || flatFee > 0) {
+                displayText = `Starts at ${formatCurrency(unitPrice || flatFee, currency)} per unit`;
+                return displayText;
+            }
+        }
+        // Default package pricing format
         const packageQty = price.packageQuantity || 1;
         displayText += ` per ${packageQty} unit${packageQty > 1 ? 's' : ''}`;
     }
@@ -67,9 +95,9 @@ export const formatPriceDisplay = (price) => {
         const packageQty = price.packageQuantity || 1;
         displayText += ` per ${packageQty} unit${packageQty > 1 ? 's' : ''}`;
     }
-    // For tiered, graduated, volume, or usage-based pricing, don't show billing period in the "Starts at" text
+    // For tiered, graduated, volume, or usage-based pricing, show "per unit"
     else if (['tiered', 'graduated', 'volume', 'usage-based'].includes(price.pricingModel)) {
-        // Don't add any suffix
+        displayText += ' per unit';
     }
     // For regular recurring pricing, show the billing period
     else if (price.pricingType === 'recurring' && price.billingPeriod) {

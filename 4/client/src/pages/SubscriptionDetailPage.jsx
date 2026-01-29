@@ -30,10 +30,46 @@ function SubscriptionDetailPage({ themeMode }) {
         )
     }
 
+    // Helper function to extract actual price from priceDetails
+    const getActualPrice = (product) => {
+        // First try to use stored price if it's valid (not 0)
+        if (product.price && product.price > 0) {
+            return product.price
+        }
+
+        // Otherwise extract from priceDetails based on pricing model
+        const priceDetails = product.priceDetails
+        if (!priceDetails) return 0
+
+        let price = 0
+        if (priceDetails.pricingModel === 'flat-rate') {
+            price = priceDetails.amount || 0
+        } else if (priceDetails.pricingModel === 'package') {
+            // Package pricing uses tiers structure, not amount
+            if (priceDetails.tiers && priceDetails.tiers.length > 0) {
+                price = priceDetails.tiers[0].unitPrice || priceDetails.tiers[0].flatFee || 0
+            } else {
+                // Fallback to amount if tiers not present
+                price = priceDetails.amount || 0
+            }
+        } else if (priceDetails.pricingModel === 'tiered' ||
+            priceDetails.pricingModel === 'graduated' ||
+            priceDetails.pricingModel === 'volume' ||
+            priceDetails.pricingModel === 'usage-based') {
+            if (priceDetails.tiers && priceDetails.tiers.length > 0) {
+                price = priceDetails.tiers[0].unitPrice || priceDetails.tiers[0].flatFee || 0
+            }
+        } else if (priceDetails.pricingModel === 'customer-chooses-price') {
+            price = priceDetails.suggestedAmount || priceDetails.minimumAmount || 0
+        }
+
+        return price
+    }
+
     const calculateSubtotal = () => {
         if (!subscription || !subscription.products) return 0
         return subscription.products.reduce((sum, product) => {
-            return sum + ((product.price || 0) * (product.quantity || 1))
+            return sum + (getActualPrice(product) * (product.quantity || 1))
         }, 0)
     }
 
@@ -41,6 +77,24 @@ function SubscriptionDetailPage({ themeMode }) {
         if (!subscription || !subscription.products || subscription.products.length === 0) return 'USD'
         const firstProduct = subscription.products[0]
         return firstProduct.priceDetails?.currency || 'USD'
+    }
+
+    const formatPricePeriod = (priceDetails) => {
+        if (!priceDetails) return 'month'
+
+        // For package pricing, show 'per unit' or 'per X units'
+        if (priceDetails.pricingModel === 'package') {
+            const packageQty = priceDetails.packageQuantity || priceDetails.packageSize || 1
+            return packageQty > 1 ? `${packageQty} units` : 'unit'
+        }
+
+        // For tiered, graduated, volume, or usage-based, show 'per unit'
+        if (['tiered', 'graduated', 'volume', 'usage-based'].includes(priceDetails.pricingModel)) {
+            return 'unit'
+        }
+
+        // For flat-rate and others, show the billing period
+        return formatBillingPeriod(priceDetails)
     }
 
     return (
@@ -75,7 +129,7 @@ function SubscriptionDetailPage({ themeMode }) {
                         {subscription.customerId?.name}
                     </Typography>
                     <Typography sx={{ color: colors.textSecondary, fontSize: '1rem' }}>
-                        on product {subscription.products.length}
+                        on {subscription.products[0]?.productName || 'product'}
                     </Typography>
                     <Chip
                         label={subscription.status || 'Active'}
@@ -175,17 +229,17 @@ function SubscriptionDetailPage({ themeMode }) {
                                                     {product.productName}
                                                 </Typography>
                                                 <Typography sx={{ color: colors.textSecondary, fontSize: '0.8125rem' }}>
-                                                    {formatCurrency(product.price, product.priceDetails?.currency)} / {formatBillingPeriod(product.priceDetails)}
+                                                    {formatCurrency(getActualPrice(product), product.priceDetails?.currency)} / {formatPricePeriod(product.priceDetails)}
                                                 </Typography>
                                             </Box>
                                             <Box component="td" sx={{ p: 2, color: colors.text, fontSize: '0.875rem' }}>
-                                                {formatCurrency(product.price, product.priceDetails?.currency)} / {formatBillingPeriod(product.priceDetails)}
+                                                {formatCurrency(getActualPrice(product), product.priceDetails?.currency)} / {formatPricePeriod(product.priceDetails)}
                                             </Box>
                                             <Box component="td" sx={{ p: 2, color: colors.text, fontSize: '0.875rem' }}>
                                                 {product.quantity}
                                             </Box>
                                             <Box component="td" sx={{ p: 2, color: colors.text, fontSize: '0.875rem' }}>
-                                                {formatCurrency(product.price * product.quantity, product.priceDetails?.currency)} / {formatBillingPeriod(product.priceDetails)}
+                                                {formatCurrency(getActualPrice(product) * product.quantity, product.priceDetails?.currency)} / {formatPricePeriod(product.priceDetails)}
                                             </Box>
                                             <Box component="td" sx={{ p: 2 }}>
                                                 <Typography sx={{ color: colors.accent, fontSize: '0.8125rem', fontFamily: 'monospace' }}>
@@ -234,10 +288,10 @@ function SubscriptionDetailPage({ themeMode }) {
                                         </Box>
                                         <Typography sx={{ color: colors.text, fontSize: '0.875rem' }}>{product.quantity}</Typography>
                                         <Typography sx={{ color: colors.text, fontSize: '0.875rem', textAlign: 'right' }}>
-                                            {formatCurrency(product.price, product.priceDetails?.currency)}
+                                            {formatCurrency(getActualPrice(product), product.priceDetails?.currency)}
                                         </Typography>
                                         <Typography sx={{ color: colors.text, fontSize: '0.875rem', textAlign: 'right' }}>
-                                            {formatCurrency(product.price * product.quantity, product.priceDetails?.currency)}
+                                            {formatCurrency(getActualPrice(product) * product.quantity, product.priceDetails?.currency)}
                                         </Typography>
                                     </Box>
                                 ))}

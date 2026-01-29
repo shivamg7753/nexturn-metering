@@ -80,11 +80,22 @@ export const createSubscription = async (req, res) => {
                     // Calculate price based on pricing model
                     if (selectedPrice.pricingModel === 'flat-rate') {
                         price = selectedPrice.amount || 0;
-                    } else if (selectedPrice.pricingModel === 'tiered' || selectedPrice.pricingModel === 'graduated') {
-                        // For tiered/graduated, use first tier price
+                    } else if (selectedPrice.pricingModel === 'package') {
+                        // For package pricing, use amount divided by package quantity
+                        price = selectedPrice.amount || 0;
+                    } else if (selectedPrice.pricingModel === 'tiered' || selectedPrice.pricingModel === 'graduated' || selectedPrice.pricingModel === 'volume') {
+                        // For tiered/graduated/volume, use first tier price
                         if (selectedPrice.tiers && selectedPrice.tiers.length > 0) {
                             price = selectedPrice.tiers[0].unitPrice || selectedPrice.tiers[0].flatFee || 0;
                         }
+                    } else if (selectedPrice.pricingModel === 'usage-based') {
+                        // For usage-based, try to get from tiers or set to 0 (will be calculated later)
+                        if (selectedPrice.tiers && selectedPrice.tiers.length > 0) {
+                            price = selectedPrice.tiers[0].unitPrice || selectedPrice.tiers[0].flatFee || 0;
+                        }
+                    } else if (selectedPrice.pricingModel === 'customer-chooses-price') {
+                        // For customer-chooses-price, use suggested amount
+                        price = selectedPrice.suggestedAmount || selectedPrice.minimumAmount || 0;
                     }
                 }
 
