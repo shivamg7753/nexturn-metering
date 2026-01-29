@@ -21,8 +21,8 @@ export function validateMeter(meterData) {
         errors.displayName = 'Display name is required';
     }
 
-    if (!meterData.aggregationType) {
-        errors.aggregationType = 'Aggregation type is required';
+    if (!meterData.aggregationMethod) {
+        errors.aggregationMethod = 'Aggregation method is required';
     }
 
     return {
@@ -54,9 +54,12 @@ export function transformMeterToApi(uiMeter) {
     const apiMeter = {
         eventName: uiMeter.eventName,
         displayName: uiMeter.displayName,
-        aggregationType: uiMeter.aggregationType,
-        valuePropertyName: uiMeter.valuePropertyName,
-        status: uiMeter.status || 'active',
+        aggregationMethod: uiMeter.aggregationMethod,
+        eventIngestion: uiMeter.eventIngestion,
+        dimensions: uiMeter.dimensions,
+        valueKey: uiMeter.valueKey,
+        customerMappingKey: uiMeter.customerMappingKey,
+        status: uiMeter.status || 'Active',
     };
 
     // Remove undefined fields
