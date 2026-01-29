@@ -81,8 +81,13 @@ export const createSubscription = async (req, res) => {
                     if (selectedPrice.pricingModel === 'flat-rate') {
                         price = selectedPrice.amount || 0;
                     } else if (selectedPrice.pricingModel === 'package') {
-                        // For package pricing, use amount divided by package quantity
-                        price = selectedPrice.amount || 0;
+                        // Package pricing uses tiers structure, not amount
+                        if (selectedPrice.tiers && selectedPrice.tiers.length > 0) {
+                            price = selectedPrice.tiers[0].unitPrice || selectedPrice.tiers[0].flatFee || 0;
+                        } else {
+                            // Fallback to amount if tiers not present
+                            price = selectedPrice.amount || 0;
+                        }
                     } else if (selectedPrice.pricingModel === 'tiered' || selectedPrice.pricingModel === 'graduated' || selectedPrice.pricingModel === 'volume') {
                         // For tiered/graduated/volume, use first tier price
                         if (selectedPrice.tiers && selectedPrice.tiers.length > 0) {

@@ -88,7 +88,7 @@ function ProductCataloguePage({ themeMode }) {
                 prices: productData.advancedPricing ? [productData.advancedPricing] : []
             }
 
-            if (isEditing) {
+            if (editingProduct) {
                 await productApi.updateProduct(editingProduct.id, payload);
             } else {
                 await productApi.createProduct(payload);
