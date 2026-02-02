@@ -1,5 +1,7 @@
 import Subscription from '../models/Subscription.js';
 import Product from '../models/Product.js';
+import Ingest from '../models/Ingest.js';
+import Meter from '../models/Meter.js';
 
 /**
  * Subscription Controller
@@ -11,15 +13,19 @@ import Product from '../models/Product.js';
  */
 export const getAllSubscriptions = async (req, res) => {
     try {
-        const { customerId } = req.query;
+        const { customerId, productId } = req.query;
         let filter = {};
 
         if (customerId) {
             filter.customerId = customerId;
         }
 
+        if (productId) {
+            filter['products.productId'] = productId;
+        }
+
         const subscriptions = await Subscription.find(filter)
-            .populate('customerId', 'name email')
+            .populate('customerId', 'name email customerId')
             .sort({ createdAt: -1 });
 
         res.json(subscriptions);
@@ -34,11 +40,62 @@ export const getAllSubscriptions = async (req, res) => {
 export const getSubscriptionById = async (req, res) => {
     try {
         const subscription = await Subscription.findById(req.params.id)
-            .populate('customerId', 'name email');
+            .populate('customerId', 'name email customerId');
 
         if (!subscription) return res.status(404).json({ error: 'Subscription not found' });
 
-        res.json(subscription);
+        // Convert to plain object to allow adding dynamic fields
+        const subObj = subscription.toObject();
+
+        // For each usage-based product, calculate aggregated usage
+        for (let i = 0; i < subObj.products.length; i++) {
+            const product = subObj.products[i];
+            const priceDetails = product.priceDetails;
+
+            // Check if it's usage-based and has a meter
+            if (priceDetails?.pricingModel === 'usage-based' && priceDetails?.meter) {
+                const meterId = priceDetails.meter;
+
+                // Fetch the meter to get the human-readable slug (eventName)
+                const meter = await Meter.findById(meterId);
+                const meterSlug = meter?.eventName;
+
+                const cusStr = subscription.customerId?.customerId;
+                const cusId = subscription.customerId?._id?.toString();
+
+                console.log(`Aggregating usage for Meter ID: ${meterId}, Slug: ${meterSlug}, Customer: ${cusStr} / ${cusId}`);
+
+                // Build matchers for $or query
+                const eventMatchers = [{ eventName: meterId }];
+                if (meterSlug) eventMatchers.push({ eventName: meterSlug });
+
+                const customerMatchers = [];
+                if (cusStr) customerMatchers.push({ customerId: cusStr });
+                if (cusId) customerMatchers.push({ customerId: cusId });
+
+                if (customerMatchers.length > 0) {
+                    // Aggregate usage events for this customer and event
+                    const events = await Ingest.find({
+                        $or: eventMatchers,
+                        customerId: { $in: customerMatchers.map(m => m.customerId) }
+                    });
+
+                    // Calculate total value
+                    const totalUsage = events.reduce((sum, event) => {
+                        // Check both slug and ID in payload
+                        const val = event.payload?.[meterSlug]?.value ||
+                            event.payload?.[meterId]?.value || 1;
+                        return sum + (parseFloat(val) || 0);
+                    }, 0);
+
+                    // Update quantity dynamically in the response
+                    subObj.products[i].quantity = totalUsage;
+                    subObj.products[i].isLiveUsage = true;
+                }
+            }
+        }
+
+        res.json(subObj);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -94,11 +151,14 @@ export const createSubscription = async (req, res) => {
                             price = selectedPrice.tiers[0].unitPrice || selectedPrice.tiers[0].flatFee || 0;
                         }
                     } else if (selectedPrice.pricingModel === 'usage-based') {
-                        // For usage-based, try to get from tiers or set to 0 (will be calculated later)
+                        // For usage-based, try to get from tiers or fallback to amount
                         if (selectedPrice.tiers && selectedPrice.tiers.length > 0) {
                             price = selectedPrice.tiers[0].unitPrice || selectedPrice.tiers[0].flatFee || 0;
+                        } else {
+                            price = selectedPrice.amount || 0;
                         }
-                    } else if (selectedPrice.pricingModel === 'customer-chooses-price') {
+                    }
+                    else if (selectedPrice.pricingModel === 'customer-chooses-price') {
                         // For customer-chooses-price, use suggested amount
                         price = selectedPrice.suggestedAmount || selectedPrice.minimumAmount || 0;
                     }

@@ -67,8 +67,14 @@ function ProductCataloguePage({ themeMode }) {
                     pricingDisplay = `₹${pricing.amount}`
                 } else if (pricing.pricingModel === 'customer-chooses-price') {
                     pricingDisplay = 'Customer chooses'
-                } else if (['tiered', 'graduated', 'volume'].includes(pricing.pricingModel)) {
-                    pricingDisplay = `${pricing.tiers?.length || 0} tiers`
+                } else if (['tiered', 'graduated', 'volume', 'usage-based'].includes(pricing.pricingModel)) {
+                    if (pricing.tiers?.length > 0) {
+                        pricingDisplay = `${pricing.tiers.length} tiers`
+                    } else if (pricing.amount) {
+                        pricingDisplay = `₹${pricing.amount}`
+                    } else {
+                        pricingDisplay = 'Metered'
+                    }
                 }
             } else if (productData.amount) {
                 pricingDisplay = `₹${productData.amount}`

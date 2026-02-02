@@ -1,7 +1,17 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { Box, Typography, Breadcrumbs, Link, Chip, IconButton, Button } from '@mui/material';
+
+const PULSE_STYLES = `
+@keyframes pulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+`;
+import { Box, Typography, Breadcrumbs, Link, Chip, IconButton, Button, Tooltip } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { getCustomerColors } from '../components/customers/themeUtils';
 import { useSubscription } from '../hooks/useSubscription';
 import { formatDateShort, formatDateTime, formatDate } from '../utils/dateUtils';
@@ -32,38 +42,32 @@ function SubscriptionDetailPage({ themeMode }) {
 
     // Helper function to extract actual price from priceDetails
     const getActualPrice = (product) => {
-        // First try to use stored price if it's valid (not 0)
-        if (product.price && product.price > 0) {
-            return product.price
+        // 1. Try stored price first if valid
+        if (product.price && product.price > 0) return product.price
+
+        // 2. Try stored priceDetails
+        const pd = product.priceDetails
+        if (pd) {
+            if (pd.amount) return parseFloat(pd.amount)
+            if (pd.tiers && pd.tiers.length > 0) {
+                return parseFloat(pd.tiers[0].unitPrice || pd.tiers[0].flatFee || 0)
+            }
+            if (pd.suggestedAmount || pd.minimumAmount) {
+                return parseFloat(pd.suggestedAmount || pd.minimumAmount || 0)
+            }
         }
 
-        // Otherwise extract from priceDetails based on pricing model
-        const priceDetails = product.priceDetails
-        if (!priceDetails) return 0
-
-        let price = 0
-        if (priceDetails.pricingModel === 'flat-rate') {
-            price = priceDetails.amount || 0
-        } else if (priceDetails.pricingModel === 'package') {
-            // Package pricing uses tiers structure, not amount
-            if (priceDetails.tiers && priceDetails.tiers.length > 0) {
-                price = priceDetails.tiers[0].unitPrice || priceDetails.tiers[0].flatFee || 0
-            } else {
-                // Fallback to amount if tiers not present
-                price = priceDetails.amount || 0
+        // 3. Try populated productId.prices (if available from populate)
+        const populatedProduct = product.productId
+        if (populatedProduct && populatedProduct.prices && populatedProduct.prices.length > 0) {
+            const firstPrice = populatedProduct.prices[0]
+            if (firstPrice.amount) return parseFloat(firstPrice.amount)
+            if (firstPrice.tiers && firstPrice.tiers.length > 0) {
+                return parseFloat(firstPrice.tiers[0].unitPrice || firstPrice.tiers[0].flatFee || 0)
             }
-        } else if (priceDetails.pricingModel === 'tiered' ||
-            priceDetails.pricingModel === 'graduated' ||
-            priceDetails.pricingModel === 'volume' ||
-            priceDetails.pricingModel === 'usage-based') {
-            if (priceDetails.tiers && priceDetails.tiers.length > 0) {
-                price = priceDetails.tiers[0].unitPrice || priceDetails.tiers[0].flatFee || 0
-            }
-        } else if (priceDetails.pricingModel === 'customer-chooses-price') {
-            price = priceDetails.suggestedAmount || priceDetails.minimumAmount || 0
         }
 
-        return price
+        return 0
     }
 
     const calculateSubtotal = () => {
@@ -99,6 +103,7 @@ function SubscriptionDetailPage({ themeMode }) {
 
     return (
         <Box sx={{ bgcolor: colors.bg, minHeight: '100vh', p: 3 }}>
+            <style>{PULSE_STYLES}</style>
             {/* Breadcrumb */}
             <Breadcrumbs
                 separator={<ChevronRightIcon sx={{ fontSize: 16, color: colors.textTertiary }} />}
@@ -222,37 +227,68 @@ function SubscriptionDetailPage({ themeMode }) {
                                     </Box>
                                 </Box>
                                 <Box component="tbody">
-                                    {subscription.products.map((product, idx) => (
-                                        <Box key={idx} component="tr" sx={{ borderBottom: `1px solid ${colors.border}` }}>
-                                            <Box component="td" sx={{ p: 2 }}>
-                                                <Typography sx={{ color: colors.accent, fontSize: '0.875rem', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}>
-                                                    {product.productName}
-                                                </Typography>
-                                                <Typography sx={{ color: colors.textSecondary, fontSize: '0.8125rem' }}>
-                                                    {formatCurrency(getActualPrice(product), product.priceDetails?.currency)} / {formatPricePeriod(product.priceDetails)}
-                                                </Typography>
+                                    {subscription.products.map((product, idx) => {
+                                        const isUsageBased = product.priceDetails?.pricingModel === 'usage-based';
+                                        const actualPrice = getActualPrice(product);
+                                        const currency = product.priceDetails?.currency || 'USD';
+                                        const period = formatPricePeriod(product.priceDetails);
+                                        const itemId = `si_${product.productId?.toString().slice(-12) || 'unknown'}`;
+
+                                        return (
+                                            <Box key={idx} component="tr" sx={{ borderBottom: `1px solid ${colors.border}` }}>
+                                                <Box component="td" sx={{ p: 2 }}>
+                                                    <Typography sx={{ color: colors.accent, fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}>
+                                                        {product.productName}
+                                                    </Typography>
+                                                </Box>
+                                                <Box component="td" sx={{ p: 2 }}>
+                                                    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                                                        <Link sx={{ color: colors.accent, fontSize: '0.8125rem', textDecoration: 'underline', mb: 0.25, cursor: 'pointer' }}>
+                                                            price_1Srwt{product.productId?.toString().slice(-12)}
+                                                        </Link>
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                            <Typography sx={{ color: colors.textSecondary, fontSize: '0.8125rem' }}>
+                                                                {formatCurrency(actualPrice, currency)} per unit / {period}
+                                                            </Typography>
+                                                            {isUsageBased && (
+                                                                <InfoOutlinedIcon sx={{ fontSize: 14, color: colors.textTertiary }} />
+                                                            )}
+                                                        </Box>
+                                                    </Box>
+                                                </Box>
+                                                <Box component="td" sx={{ p: 2, color: isUsageBased ? colors.textSecondary : colors.text, fontSize: '0.875rem' }}>
+                                                    {isUsageBased ? 'Varies with usage' : product.quantity}
+                                                </Box>
+                                                <Box component="td" sx={{ p: 2, color: isUsageBased ? colors.textSecondary : colors.text, fontSize: '0.875rem' }}>
+                                                    {isUsageBased ? 'Varies with usage' : formatCurrency(actualPrice * product.quantity, currency)}
+                                                </Box>
+                                                <Box component="td" sx={{ p: 2 }}>
+                                                    <Box sx={{
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: 1,
+                                                        bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)',
+                                                        px: 1,
+                                                        py: 0.5,
+                                                        borderRadius: 1,
+                                                        border: `1px solid ${colors.border}`
+                                                    }}>
+                                                        <Typography sx={{ color: colors.textSecondary, fontSize: '0.8125rem', fontFamily: 'monospace' }}>
+                                                            {itemId}
+                                                        </Typography>
+                                                        <IconButton size="small" sx={{ p: 0.25, color: colors.textTertiary }}>
+                                                            <ContentCopyIcon sx={{ fontSize: 14 }} />
+                                                        </IconButton>
+                                                    </Box>
+                                                </Box>
+                                                <Box component="td" sx={{ p: 2 }}>
+                                                    <IconButton size="small" sx={{ color: colors.textSecondary }}>
+                                                        <MoreVertIcon sx={{ fontSize: 18 }} />
+                                                    </IconButton>
+                                                </Box>
                                             </Box>
-                                            <Box component="td" sx={{ p: 2, color: colors.text, fontSize: '0.875rem' }}>
-                                                {formatCurrency(getActualPrice(product), product.priceDetails?.currency)} / {formatPricePeriod(product.priceDetails)}
-                                            </Box>
-                                            <Box component="td" sx={{ p: 2, color: colors.text, fontSize: '0.875rem' }}>
-                                                {product.quantity}
-                                            </Box>
-                                            <Box component="td" sx={{ p: 2, color: colors.text, fontSize: '0.875rem' }}>
-                                                {formatCurrency(getActualPrice(product) * product.quantity, product.priceDetails?.currency)} / {formatPricePeriod(product.priceDetails)}
-                                            </Box>
-                                            <Box component="td" sx={{ p: 2 }}>
-                                                <Typography sx={{ color: colors.accent, fontSize: '0.8125rem', fontFamily: 'monospace' }}>
-                                                    si_{product.productId?.toString().slice(-12) || 'unknown'}
-                                                </Typography>
-                                            </Box>
-                                            <Box component="td" sx={{ p: 2 }}>
-                                                <IconButton size="small" sx={{ color: colors.textSecondary }}>
-                                                    <MoreVertIcon sx={{ fontSize: 18 }} />
-                                                </IconButton>
-                                            </Box>
-                                        </Box>
-                                    ))}
+                                        );
+                                    })}
                                 </Box>
                             </Box>
                         </Box>
@@ -286,7 +322,32 @@ function SubscriptionDetailPage({ themeMode }) {
                                                 {formatDate(subscription.billingStartDate)} – {formatDate(new Date(new Date(subscription.billingStartDate).setMonth(new Date(subscription.billingStartDate).getMonth() + 1)))}
                                             </Typography>
                                         </Box>
-                                        <Typography sx={{ color: colors.text, fontSize: '0.875rem' }}>{product.quantity}</Typography>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <Typography sx={{ color: colors.text, fontSize: '0.875rem' }}>{product.quantity}</Typography>
+                                            {product.isLiveUsage && (
+                                                <Box sx={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: 0.5,
+                                                    bgcolor: 'rgba(16, 185, 129, 0.1)',
+                                                    color: '#10b981',
+                                                    px: 0.8,
+                                                    py: 0.2,
+                                                    borderRadius: 1,
+                                                    fontSize: '0.7rem',
+                                                    fontWeight: 700
+                                                }}>
+                                                    <Box sx={{
+                                                        width: 6,
+                                                        height: 6,
+                                                        borderRadius: '50%',
+                                                        bgcolor: '#10b981',
+                                                        animation: 'pulse 1.5s infinite'
+                                                    }} />
+                                                    LIVE
+                                                </Box>
+                                            )}
+                                        </Box>
                                         <Typography sx={{ color: colors.text, fontSize: '0.875rem', textAlign: 'right' }}>
                                             {formatCurrency(getActualPrice(product), product.priceDetails?.currency)}
                                         </Typography>

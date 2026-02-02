@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { RouterProvider } from 'react-router-dom';
 import { createAppRouter } from './routes';
+import DemoProductPage from './pages/DemoProductPage'
+import EventsDashboardPage from './pages/EventsDashboardPage'
 import './App.css';
 
 /**

@@ -3,6 +3,7 @@ import productRoutes from './productRoutes.js';
 import customerRoutes from './customerRoutes.js';
 import subscriptionRoutes from './subscriptionRoutes.js';
 import meterRoutes from './meterRoutes.js';
+import ingestRoutes from './ingestRoutes.js';
 
 const router = express.Router();
 
@@ -21,5 +22,6 @@ router.use('/products', productRoutes);
 router.use('/customers', customerRoutes);
 router.use('/subscriptions', subscriptionRoutes);
 router.use('/meters', meterRoutes);
+router.use('/ingest', ingestRoutes);
 
 export default router;

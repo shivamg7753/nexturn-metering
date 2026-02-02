@@ -9,6 +9,8 @@ import CustomerDetailPage from '../pages/CustomerDetailPage';
 import SubscriptionDetailPage from '../pages/SubscriptionDetailPage';
 import SubscriptionsPage from '../pages/SubscriptionsPage';
 import PlaceholderPage from '../pages/PlaceholderPage';
+import DemoProductPage from '../pages/DemoProductPage';
+import EventsDashboardPage from '../pages/EventsDashboardPage';
 
 /**
  * Router Configuration
@@ -134,6 +136,14 @@ export const createAppRouter = (themeMode, onThemeToggle) => {
                     ),
                 },
                 {
+                    path: 'demo-product',
+                    element: <DemoProductPage themeMode={themeMode} />,
+                },
+                {
+                    path: 'events-dashboard',
+                    element: <EventsDashboardPage themeMode={themeMode} />,
+                },
+                {
                     path: 'reporting',
                     element: (
                         <PlaceholderPage
@@ -168,6 +178,8 @@ export const ROUTES = {
     PAYMENTS: '/payments',
     BILLING: '/billing',
     REPORTING: '/reporting',
+    DEMO_PRODUCT: '/demo-product',
+    EVENTS_DASHBOARD: '/events-dashboard',
 };
 
 /**

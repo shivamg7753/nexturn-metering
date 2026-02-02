@@ -9,6 +9,7 @@ import AssessmentIcon from '@mui/icons-material/Assessment'
 import PaymentIcon from '@mui/icons-material/Payment'
 import DescriptionIcon from '@mui/icons-material/Description'
 import BarChartIcon from '@mui/icons-material/BarChart'
+import BoltIcon from '@mui/icons-material/Bolt'
 
 export const mainMenuItems = [
     { text: 'Home', icon: <HomeIcon />, key: 'home' },
@@ -16,6 +17,7 @@ export const mainMenuItems = [
     { text: 'Transactions', icon: <ReceiptLongIcon />, key: 'transactions' },
     { text: 'Customers', icon: <PeopleIcon />, key: 'customers' },
     { text: 'Product Catalogue', icon: <InventoryIcon />, key: 'products' },
+    { text: 'Demo Product', icon: <BoltIcon />, key: 'demo-product' },
 ]
 
 export const shortcutItems = [
@@ -24,6 +26,7 @@ export const shortcutItems = [
     { text: 'Billing Overview', icon: <AssessmentIcon />, key: 'billing-overview' },
     { text: 'Invoices', icon: <DescriptionIcon />, key: 'invoices' },
     { text: 'Subscriptions', icon: <ReceiptLongIcon />, key: 'subscriptions' },
+    { text: 'Events Dashboard', icon: <BarChartIcon />, key: 'events-dashboard' },
 ]
 
 export const productMenuItems = [

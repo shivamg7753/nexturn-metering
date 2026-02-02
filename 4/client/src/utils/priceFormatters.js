@@ -50,7 +50,7 @@ export const formatPriceDisplay = (price) => {
     let amount = price.amount || '0.00';
     const currency = price.currency || 'INR';
 
-    // For tiered, graduated, or volume pricing, get the first tier's price
+    // For tiered, graduated, or volume pricing, or usage-based with tiers, get the first tier's price
     if ((['tiered', 'graduated', 'volume'].includes(price.pricingModel) || (price.pricingModel === 'usage-based' && price.usageType === 'per-tier')) && price.tiers && price.tiers.length > 0) {
         const firstTier = price.tiers[0];
         const unitPrice = firstTier.unitPrice || 0;
@@ -62,7 +62,7 @@ export const formatPriceDisplay = (price) => {
             return `Starts at ${formatCurrency(unitPrice, currency)} per unit + ${formatCurrency(flatFee, currency)} / ${period}`;
         }
         // Otherwise use the first non-zero value
-        amount = unitPrice || flatFee || '0.00';
+        amount = unitPrice || flatFee || price.amount || '0.00';
     }
 
     let displayText = `Starts at ${formatCurrency(amount, currency)}`;
